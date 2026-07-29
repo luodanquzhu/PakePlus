@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🌟 学习打卡旺旺乐园</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', -apple-system, system-ui, sans-serif;
+        }
+        body {
+            background: #f7f3f0;
+            min-height: 100vh;
+            padding: 20px 16px 80px;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0 12px;
+            border-bottom: 2px solid rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .header-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #3D2C1E;
+        }
+        .header-title span {
+            background: linear-gradient(135deg, #f9a825, #ff6f00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header-score {
+            background: #ffd54f;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 16px;
+            color: #3D2C1E;
+            box-shadow: 0 2px 8px rgba(255,193,7,0.3);
+        }
+        .header-score small {
+            font-weight: 400;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        /* 学科卡片 */
+        .subject-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .subject-card {
+            background: white;
+            border-radius: 20px;
+            padding: 18px 14px 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            cursor: pointer;
+            transition: 0.2s;
+            border-left: 6px solid #ccc;
+            position: relative;
+        }
+        .subject-card:active { transform: scale(0.96); }
+        .subject-card .icon { font-size: 30px; }
+        .subject-card .name { font-weight: 700; font-size: 16px; margin: 4px 0; }
+        .subject-card .status { font-size: 13px; color: #999; display: flex; align-items: center; gap: 6px; }
+        .subject-card .status .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .subject-card .status .dot.done { background: #4caf50; }
+        .subject-card .status .dot.none { background: #e0e0e0; }
+        .subject-card .duration-today {
+            font-size: 12px;
+            background: #f0ebe7;
+            padding: 2px 12px;
+            border-radius: 12px;
+            margin-top: 6px;
+            display: inline-block;
+        }
+        .subject-card .badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 11px;
+            background: #ff6b6b;
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .subject-card .badge.done { background: #4caf50; }
+        .subject-card.yuwen { border-color: #4A90D9; }
+        .subject-card.zangyu { border-color: #C41A1A; }
+        .subject-card.yingyu { border-color: #2ECC71; }
+        .subject-card.shuxue { border-color: #9B59B6; }
+
+        /* 打卡计时器（全屏） */
+        #clockPage {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #f7f3f0;
+            z-index: 1000;
+            padding: 20px;
+            flex-direction: column;
+            max-width: 480px;
+            margin: 0 auto;
+            animation: slideUp 0.3s ease;
+        }
+        #clockPage.open { display: flex; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .clock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(0,0,0,0.06);
+        }
+        .clock-header .back-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0 8px;
+        }
+        .clock-header .subject-label { font-size: 20px; font-weight: 700; display: flex; gap: 8px; align-items: center; }
+        .clock-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        .clock-timer {
+            font-size: 72px;
+            font-weight: 300;
+            font-family: 'SF Mono', monospace;
+            background: white;
+            padding: 20px 40px;
+            border-radius: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            letter-spacing: 2px;
+        }
+        .clock-timer .unit { font-size: 20px; color: #999; margin: 0 2px; }
+        .clock-status { font-size: 16px; color: #888; min-height: 28px; text-align: center; }
+        .clock-status .highlight { color: #e65100; font-weight: 600; }
+        .clock-controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .clock-controls button {
+            padding: 14px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 100px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: 0.2s;
+        }
+        .clock-controls button:active { transform: scale(0.94); }
+        .clock-controls button:disabled { opacity: 0.4; transform: none; cursor: not-allowed; }
+        .btn-start { background: linear-gradient(135deg, #66bb6a, #43a047); color: #fff; }
+        .btn-pause { background: linear-gradient(135deg, #ffa726, #fb8c00); color: #fff; }
+        .btn-stop { background: linear-gradient(135deg, #ef5350, #c62828); color: #fff; }
+        .clock-info {
+            background: #fff8e1;
+            padding: 12px 20px;
+            border-radius: 16px;
+            border: 1px solid #ffe082;
+            font-size: 14px;
+            color: #6d4c00;
+            text-align: center;
+            width: 100%;
+            max-width: 340px;
+        }
+        .clock-records {
+            font-size: 13px;
+            color: #888;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+            width: 100%;
+            max-width: 340px;
+            text-align: center;
+        }
+
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0; right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 env(safe-area-inset-bottom);
+            box-shadow: 0 -2px 16px rgba(0,0,0,0.06);
+            max-width: 480px;
+            margin: 0 auto;
+            border-top: 1px solid rgba(0,0,0,0.04);
+            z-index: 500;
+        }
+        .bottom-nav .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 16px;
+            color: #999;
+            font-size: 12px;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+        .bottom-nav .nav-item .nav-icon { font-size: 26px; line-height: 1.2; }
+        .bottom-nav .nav-item .nav-label { font-size: 11px; margin-top: 2px; font-weight: 500; }
+        .bottom-nav .nav-item.active { color: #ff6f00; }
+        .bottom-nav .nav-item.active::after {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 30%; right: 30%;
+            height: 3px;
+            background: #ff6f00;
+            border-radius: 0 0 4px 4px;
+        }
+        .bottom-nav .nav-item { position: relative; }
+
+        /* 页面容器 */
+        .page {
+            display: none;
+            animation: fadeUp 0.3s ease;
+        }
+        .page.active { display: block; }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 总结页面 */
+        .summary-header { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+        .summary-sub { font-size: 14px; color: #888; margin-bottom: 16px; }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .summary-item {
+            background: white;
+            border-radius: 16px;
+            padding: 14px 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            border-left: 4px solid #ccc;
+        }
+        .summary-item .s-icon { font-size: 22px; }
+        .summary-item .s-name { font-size: 14px; font-weight: 600; }
+        .summary-item .s-detail { font-size: 13px; color: #777; margin-top: 4px; line-height: 1.6; }
+        .summary-item.yuwen { border-color: #4A90D9; }
+        .summary-item.zangyu { border-color: #C41A1A; }
+        .summary-item.yingyu { border-color: #2ECC71; }
+        .summary-item.shuxue { border-color: #9B59B6; }
+        .reward-box {
+            background: #fff8e1;
+            border-radius: 16px;
+            padding: 14px 18px;
+            border: 2px dashed #ffb300;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .reward-box .reward-label { font-weight: 600; color: #6d4c00; display: flex; gap: 8px; align-items: center; }
+        .reward-box .reward-value { font-size: 22px; font-weight: 700; color: #e65100; }
+        .reward-box .reward-value .unit { font-size: 14px; font-weight: 400; color: #6d4c00; }
+        .summary-total {
+            background: white;
+            border-radius: 16px;
+            padding: 16px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .summary-total .label { font-size: 16px; font-weight: 600; color: #555; }
+        .summary-total .value { font-size: 26px; font-weight: 700; color: #ff6f00; }
+
+        .no-data { text-align: center; padding: 30px 10px; color: #999; font-size: 15px; }
+        .no-data .big { font-size: 48px; display: block; margin-bottom: 10px; }
+
+        /* 历史记录表格 */
+        .history-list {
+            background: white;
+            border-radius: 16px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+        .history-item:last-child { border-bottom: none; }
+        .history-item .h-subject { font-weight: 600; }
+        .history-item .h-duration { color: #e65100; }
+        .history-item .h-score { color: #2e7d32; font-weight: 600; }
+        .clear-btn {
+            background: #ef5350;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 12px;
+            display: inline-block;
+        }
+        .clear-btn:active { opacity: 0.7; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.78);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 16px;
+            font-size: 15px;
+            z-index: 2000;
+            opacity: 0;
+            transition: 0.3s;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+            backdrop-filter: blur(4px);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.success { background: rgba(46,125,50,0.92); }
+        .toast.warning { background: rgba(237,108,2,0.92); }
+        .toast.error { background: rgba(183,28,28,0.92); }
+    </style>
+</head>
+<body>
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 首页 -->
+    <div id="homePage" class="page active">
+        <div class="header">
+            <div class="header-title">📚 学习 <span>旺旺乐园</span></div>
+            <div class="header-score">⭐ <span id="totalScoreNum">0</span> <small>积分</small></div>
+        </div>
+        <div class="subject-grid" id="subjectGrid"></div>
+        <div style="text-align:center; font-size:13px; color:#bbb; margin-top:8px;">💡 打卡 ≥15分钟 才获得积分</div>
+    </div>
+
+    <!-- 周总结 -->
+    <div id="weekPage" class="page">
+        <div class="header" style="border-bottom:none; padding-bottom:4px;">
+            <div class="summary-header">📅 周总结</div>
+            <div style="font-size:14px; color:#888;" id="weekRange"></div>
+        </div>
+        <div id="weekContent"></div>
+    </div>
+
+    <!-- 月总结 -->
+    <div id="monthPage" class="page">
+        <div class="header" style="border-bottom:none; padding-bottom:4px;">
+            <div class="summary-header">📆 月总结</div>
+            <div style="font-size:14px; color:#888;" id="monthLabel"></div>
+        </div>
+        <div id="monthContent"></div>
+    </div>
+
+    <!-- 打卡页面 (全屏) -->
+    <div id="clockPage">
+        <div class="clock-header">
+            <button class="back-btn" id="clockBackBtn">✕</button>
+            <div class="subject-label" id="clockSubjectLabel">📖 语文阅读</div>
+            <div style="width:40px;"></div>
+        </div>
+        <div class="clock-body">
+            <div class="clock-timer" id="clockTimer">00<span class="unit">:</span>00<span class="unit">:</span>00</div>
+            <div class="clock-status" id="clockStatus">⏳ 准备开始</div>
+            <div class="clock-controls">
+                <button class="btn-start" id="clockStartBtn">▶ 开始</button>
+                <button class="btn-pause" id="clockPauseBtn" disabled>⏸ 暂停</button>
+                <button class="btn-stop" id="clockStopBtn" disabled>⏹ 结束</button>
+            </div>
+            <div class="clock-info" id="clockInfo">💡 打卡 ≥15分钟 可获得积分</div>
+            <div class="clock-records" id="clockRecords">📌 今日还未打卡</div>
+        </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-page="home"><span class="nav-icon">🏠</span><span class="nav-label">首页</span></button>
+        <button class="nav-item" data-page="week"><span class="nav-icon">📅</span><span class="nav-label">周总结</span></button>
+        <button class="nav-item" data-page="month"><span class="nav-icon">📆</span><span class="nav-label">月总结</span></button>
+        <button class="nav-item" data-page="history"><span class="nav-icon">📋</span><span class="nav-label">记录</span></button>
+    </nav>
+
+    <!-- ==================== 历史记录页面（新增） ==================== -->
+    <div id="historyPage" class="page">
+        <div class="header" style="border-bottom:none; padding-bottom:4px;">
+            <div class="summary-header">📋 打卡记录</div>
+            <button class="clear-btn" id="clearAllBtn">🗑 清除所有</button>
+        </div>
+        <div id="historyContent"></div>
+    </div>
+
+    <script>
+        // ============================================================
+        // 配置
+        const SUBJECTS = [
+            { id: 'yuwen', name: '语文阅读', icon: '📖' },
+            { id: 'zangyu', name: '藏语文阅读', icon: '📚' },
+            { id: 'yingyu', name: '英语阅读', icon: '🔤' },
+            { id: 'shuxue', name: '数学打卡', icon: '🧮' },
+        ];
+        const MIN_DURATION = 15;
+        const WEEK_REWARD_DAYS = 5;
+        const WEEK_REWARD_POINTS = 10;
+        const MONTH_REWARD_DAYS = 20;
+        const MONTH_REWARD_POINTS = 30;
+        const STORAGE_KEY = 'child_checkin_data';
+
+        // ============================================================
+        // 数据操作
+        function loadData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    if (data && Array.isArray(data.records)) return data;
+                }
+            } catch (_) {}
+            return { records: [] };
+        }
+        function saveData(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function getTodayStr() {
+            const d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        }
+        function parseDate(str) {
+            const parts = str.split('-').map(Number);
+            return new Date(parts[0], parts[1]-1, parts[2]);
+        }
+        function getWeekRange(date) {
+            const d = new Date(date);
+            const day = d.getDay() || 7;
+            const diff = day - 1;
+            const monday = new Date(d); monday.setDate(d.getDate() - diff); monday.setHours(0,0,0,0);
+            const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+            return { monday, sunday };
+        }
+        function isSameDay(a,b) { return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+
+        // 添加记录
+        function addRecord(subjectId, duration) {
+            const data = loadData();
+            const record = {
+                id: Date.now() + '_' + Math.random().toString(36).slice(2,6),
+                date: getTodayStr(),
+                subject: subjectId,
+                duration: duration,
+                score: duration
+            };
+            data.records.push(record);
+            saveData(data);
+            return record;
+        }
+
+        // 统计
+        function getTodayRecords(data, subjectId) {
+            const today = getTodayStr();
+            return data.records.filter(r => r.date === today && r.subject === subjectId);
+        }
+        function getRecordsInRange(data, start, end) {
+            return data.records.filter(r => {
+                const d = parseDate(r.date);
+                return d >= start && d <= end;
+            });
+        }
+        function getSubjectStats(records, subjectId) {
+            const filtered = records.filter(r => r.subject === subjectId);
+            const days = new Set(filtered.map(r => r.date));
+            const totalDuration = filtered.reduce((s,r) => s + r.duration, 0);
+            const totalScore = filtered.reduce((s,r) => s + r.score, 0);
+            return { count: filtered.length, days: days.size, totalDuration, totalScore };
+        }
+        function getAllStats(records) {
+            const result = {};
+            let totalScoreAll = 0, totalDurationAll = 0;
+            SUBJECTS.forEach(s => {
+                const stats = getSubjectStats(records, s.id);
+                result[s.id] = stats;
+                totalScoreAll += stats.totalScore;
+                totalDurationAll += stats.totalDuration;
+            });
+            const uniqueDays = new Set(records.map(r => r.date));
+            return { subjects: result, totalScore: totalScoreAll, totalDuration: totalDurationAll, totalDays: uniqueDays.size };
+        }
+
+        // 周奖励
+        function calcWeekReward(records, weekStart) {
+            const { monday, sunday } = getWeekRange(weekStart);
+            const weekRecords = getRecordsInRange({ records }, monday, sunday);
+            const uniqueDays = new Set(weekRecords.map(r => r.date));
+            if (uniqueDays.size >= WEEK_REWARD_DAYS) return { earned: true, points: WEEK_REWARD_POINTS, days: uniqueDays.size };
+            return { earned: false, points: 0, days: uniqueDays.size };
+        }
+        function calcAllWeekRewards(data) {
+            const records = data.records;
+            if (!records.length) return { totalPoints: 0, weeks: [] };
+            const weekMap = new Map();
+            records.forEach(r => {
+                const d = parseDate(r.date);
+                const { monday } = getWeekRange(d);
+                const key = monday.getTime();
+                if (!weekMap.has(key)) weekMap.set(key, { monday, records: [] });
+                weekMap.get(key).records.push(r);
+            });
+            let total = 0;
+            const weeks = [];
+            for (const [key, group] of weekMap) {
+                const uniqueDays = new Set(group.records.map(r => r.date));
+                if (uniqueDays.size >= WEEK_REWARD_DAYS) {
+                    total += WEEK_REWARD_POINTS;
+                    weeks.push({ monday: group.monday, days: uniqueDays.size, points: WEEK_REWARD_POINTS });
+                }
+            }
+            return { totalPoints: total, weeks };
+        }
+        function calcAllMonthRewards(data) {
+            const records = data.records;
+            if (!records.length) return { totalPoints: 0, months: [] };
+            const monthMap = new Map();
+            records.forEach(r => {
+                const d = parseDate(r.date);
+                const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+                if (!monthMap.has(key)) monthMap.set(key, { year: d.getFullYear(), month: d.getMonth(), records: [] });
+                monthMap.get(key).records.push(r);
+            });
+            let total = 0;
+            const months = [];
+            for (const [key, group] of monthMap) {
+                const uniqueDays = new Set(group.records.map(r => r.date));
+                if (uniqueDays.size >= MONTH_REWARD_DAYS) {
+                    total += MONTH_REWARD_POINTS;
+                    months.push({ year: group.year, month: group.month, days: uniqueDays.size, points: MONTH_REWARD_POINTS });
+                }
+            }
+            return { totalPoints: total, months };
+        }
+
+        function calcTotalScore(data) {
+            const records = data.records;
+            const recordScore = records.reduce((s,r) => s + r.score, 0);
+            const weekReward = calcAllWeekRewards(data);
+            const monthReward = calcAllMonthRewards(data);
+            return recordScore + weekReward.totalPoints + monthReward.totalPoints;
+        }
+
+        // ============================================================
+        // 渲染
+        function renderHome() {
+            const data = loadData();
+            const total = calcTotalScore(data);
+            document.getElementById('totalScoreNum').textContent = total;
+            const grid = document.getElementById('subjectGrid');
+            let html = '';
+            SUBJECTS.forEach(sub => {
+                const todayRecs = getTodayRecords(data, sub.id);
+                const todayDuration = todayRecs.reduce((s,r) => s + r.duration, 0);
+                const hasToday = todayRecs.length > 0;
+                const statusClass = hasToday ? 'done' : 'none';
+                const statusText = hasToday ? `✅ 已完成 (${todayDuration}分钟)` : '⏳ 未打卡';
+                const badgeText = hasToday ? '已完成' : '待打卡';
+                const badgeClass = hasToday ? 'done' : '';
+                html += `
+                    <div class="subject-card ${sub.id}" data-subject="${sub.id}">
+                        <div class="icon">${sub.icon}</div>
+                        <div class="name">${sub.name}</div>
+                        <div class="status"><span class="dot ${statusClass}"></span> ${statusText}</div>
+                        ${todayDuration > 0 ? `<div class="duration-today">⏱ ${todayDuration}分钟</div>` : ''}
+                        <div class="badge ${badgeClass}">${badgeText}</div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+            document.querySelectorAll('.subject-card').forEach(el => {
+                el.addEventListener('click', function() {
+                    openClock(this.dataset.subject);
+                });
+            });
+        }
+
+        function renderWeek() {
+            const data = loadData();
+            const now = new Date();
+            const { monday, sunday } = getWeekRange(now);
+            document.getElementById('weekRange').textContent = 
+                (monday.getMonth()+1)+'/'+monday.getDate()+' - '+(sunday.getMonth()+1)+'/'+sunday.getDate();
+            const weekRecords = getRecordsInRange(data, monday, sunday);
+            const container = document.getElementById('weekContent');
+            if (!weekRecords.length) {
+                container.innerHTML = `<div class="no-data"><span class="big">📭</span>本周暂无记录</div>`;
+                return;
+            }
+            const stats = getAllStats(weekRecords);
+            let html = `<div class="summary-grid">`;
+            SUBJECTS.forEach(sub => {
+                const s = stats.subjects[sub.id] || { days:0, totalDuration:0, totalScore:0 };
+                html += `
+                    <div class="summary-item ${sub.id}">
+                        <div class="s-icon">${sub.icon}</div>
+                        <div class="s-name">${sub.name}</div>
+                        <div class="s-detail">📅 ${s.days}天 ⏱ ${s.totalDuration}分钟<br>⭐ ${s.totalScore}分</div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+
+            // 周奖励
+            const weekReward = calcWeekReward(data.records, now);
+            const allWeekRewards = calcAllWeekRewards(data);
+            const thisWeekKey = monday.getTime();
+            const already = allWeekRewards.weeks.some(w => w.monday.getTime() === thisWeekKey);
+            if (weekReward.earned || already) {
+                const pts = already ? WEEK_REWARD_POINTS : weekReward.points;
+                html += `<div class="reward-box"><div class="reward-label">🏆 周奖励</div><div class="reward-value">+${pts} <span class="unit">积分</span></div></div>`;
+            } else {
+                const remain = WEEK_REWARD_DAYS - weekReward.days;
+                html += `<div class="reward-box" style="background:#f5f0eb; border-color:#ddd; opacity:0.7;">
+                    <div class="reward-label">🏆 周奖励</div><div style="font-size:14px;color:#888;">再打卡 ${remain} 天可 +${WEEK_REWARD_POINTS} 积分</div>
+                </div>`;
+            }
+            const totalWeek = stats.totalScore + (already ? WEEK_REWARD_POINTS : (weekReward.earned ? weekReward.points : 0));
+            html += `<div class="summary-total"><span class="label">📊 本周总积分</span><span class="value">${totalWeek}</span></div>`;
+            container.innerHTML = html;
+        }
+
+        function renderMonth() {
+            const data = loadData();
+            const now = new Date();
+            const year = now.getFullYear(), month = now.getMonth();
+            document.getElementById('monthLabel').textContent = year+'年'+(month+1)+'月';
+            const start = new Date(year, month, 1);
+            const end = new Date(year, month+1, 0);
+            const monthRecords = getRecordsInRange(data, start, end);
+            const container = document.getElementById('monthContent');
+            if (!monthRecords.length) {
+                container.innerHTML = `<div class="no-data"><span class="big">📭</span>本月暂无记录</div>`;
+                return;
+            }
+            const stats = getAllStats(monthRecords);
+            let html = `<div class="summary-grid">`;
+            SUBJECTS.forEach(sub => {
+                const s = stats.subjects[sub.id] || { days:0, totalDuration:0, totalScore:0 };
+                html += `
+                    <div class="summary-item ${sub.id}">
+                        <div class="s-icon">${sub.icon}</div>
+                        <div class="s-name">${sub.name}</div>
+                        <div class="s-detail">📅 ${s.days}天 ⏱ ${s.totalDuration}分钟<br>⭐ ${s.totalScore}分</div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+
+            const monthReward = calcMonthReward(data.records, now);
+            const allMonthRewards = calcAllMonthRewards(data);
+            const thisMonthKey = year+'-'+String(month+1).padStart(2,'0');
+            const already = allMonthRewards.months.some(m => m.year===year && m.month===month);
+            if (monthReward.earned || already) {
+                const pts = already ? MONTH_REWARD_POINTS : monthReward.points;
+                html += `<div class="reward-box"><div class="reward-label">🏆 月奖励</div><div class="reward-value">+${pts} <span class="unit">积分</span></div></div>`;
+            } else {
+                const remain = MONTH_REWARD_DAYS - monthReward.days;
+                html += `<div class="reward-box" style="background:#f5f0eb; border-color:#ddd; opacity:0.7;">
+                    <div class="reward-label">🏆 月奖励</div><div style="font-size:14px;color:#888;">再打卡 ${remain} 天可 +${MONTH_REWARD_POINTS} 积分</div>
+                </div>`;
+            }
+            const totalMonth = stats.totalScore + (already ? MONTH_REWARD_POINTS : (monthReward.earned ? monthReward.points : 0));
+            html += `<div class="summary-total"><span class="label">📊 本月总积分</span><span class="value">${totalMonth}</span></div>`;
+            container.innerHTML = html;
+        }
+
+        // 新增：历史记录
+        function renderHistory() {
+            const data = loadData();
+            const container = document.getElementById('historyContent');
+            if (!data.records.length) {
+                container.innerHTML = `<div class="no-data"><span class="big">📭</span>暂无打卡记录</div>`;
+                return;
+            }
+            // 按日期倒序
+            const sorted = [...data.records].sort((a,b) => b.id - a.id);
+            let html = `<div class="history-list">`;
+            sorted.forEach(r => {
+                const sub = SUBJECTS.find(s => s.id === r.subject);
+                const name = sub ? sub.name : r.subject;
+                html += `
+                    <div class="history-item">
+                        <span class="h-subject">${name}</span>
+                        <span>${r.date}</span>
+                        <span class="h-duration">${r.duration}分钟</span>
+                        <span class="h-score">+${r.score}分</span>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        // 月奖励辅助（独立）
+        function calcMonthReward(records, monthDate) {
+            const d = new Date(monthDate);
+            const year = d.getFullYear(), month = d.getMonth();
+            const start = new Date(year, month, 1);
+            const end = new Date(year, month+1, 0);
+            const monthRecords = getRecordsInRange({ records }, start, end);
+            const uniqueDays = new Set(monthRecords.map(r => r.date));
+            if (uniqueDays.size >= MONTH_REWARD_DAYS) return { earned: true, points: MONTH_REWARD_POINTS, days: uniqueDays.size };
+            return { earned: false, points: 0, days: uniqueDays.size };
+        }
+
+        // ============================================================
+        // 计时器
+        let clockState = {
+            subjectId: null,
+            running: false,
+            paused: false,
+            seconds: 0,
+            timer: null,
+            startTimestamp: null,
+            pausedSeconds: 0,
+        };
+
+        function openClock(subjectId) {
+            const sub = SUBJECTS.find(s => s.id === subjectId);
+            if (!sub) return;
+            if (clockState.timer) { clearInterval(clockState.timer); clockState.timer = null; }
+            clockState.subjectId = subjectId;
+            clockState.running = false;
+            clockState.paused = false;
+            clockState.seconds = 0;
+            document.getElementById('clockSubjectLabel').innerHTML = sub.icon + ' ' + sub.name;
+            document.getElementById('clockTimer').textContent = '00:00:00';
+            document.getElementById('clockStatus').textContent = '⏳ 准备开始';
+            document.getElementById('clockStartBtn').disabled = false;
+            document.getElementById('clockStartBtn').textContent = '▶ 开始';
+            document.getElementById('clockPauseBtn').disabled = true;
+            document.getElementById('clockPauseBtn').textContent = '⏸ 暂停';
+            document.getElementById('clockStopBtn').disabled = true;
+            const data = loadData();
+            const todayRecs = getTodayRecords(data, subjectId);
+            const totalDur = todayRecs.reduce((s,r) => s + r.duration, 0);
+            document.getElementById('clockRecords').textContent = todayRecs.length ? `📌 今日已打卡 ${todayRecs.length} 次，共 ${totalDur} 分钟` : '📌 今日还未打卡';
+            document.getElementById('clockInfo').innerHTML = '💡 打卡 ≥15分钟 可获得积分，积分 = 时长（分钟）';
+            document.getElementById('clockPage').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeClock() {
+            if (clockState.timer) { clearInterval(clockState.timer); clockState.timer = null; }
+            document.getElementById('clockPage').classList.remove('open');
+            document.body.style.overflow = '';
+            renderHome();
+        }
+
+        function formatTime(sec) {
+            const h = String(Math.floor(sec/3600)).padStart(2,'0');
+            const m = String(Math.floor((sec%3600)/60)).padStart(2,'0');
+            const s = String(sec%60).padStart(2,'0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function updateTimerDisplay() {
+            document.getElementById('clockTimer').textContent = formatTime(clockState.seconds);
+            const mins = Math.floor(clockState.seconds / 60);
+            if (mins >= MIN_DURATION) {
+                document.getElementById('clockStatus').innerHTML = `✅ 已打卡 <strong style="color:#2e7d32;">${mins}</strong> 分钟，可获得 <strong style="color:#e65100;">${mins}</strong> 积分！`;
+                document.getElementById('clockInfo').innerHTML = `🎉 已达标！积分 = ${mins} 分钟`;
+            } else {
+                document.getElementById('clockStatus').innerHTML = `⏳ 还需 <strong style="color:#e65100;">${MIN_DURATION - mins}</strong> 分钟达标 (${mins}/${MIN_DURATION})`;
+                document.getElementById('clockInfo').innerHTML = `💡 打卡 ≥${MIN_DURATION}分钟 才可获得积分`;
+            }
+        }
+
+        function startClock() {
+            if (clockState.running) return;
+            if (clockState.paused) {
+                clockState.running = true;
+                clockState.paused = false;
+                clockState.startTimestamp = Date.now() - clockState.pausedSeconds * 1000;
+                clockState.timer = setInterval(tick, 1000);
+                document.getElementById('clockStartBtn').disabled = true;
+                document.getElementById('clockPauseBtn').disabled = false;
+                document.getElementById('clockPauseBtn').textContent = '⏸ 暂停';
+                document.getElementById('clockStopBtn').disabled = false;
+                document.getElementById('clockStatus').innerHTML = '▶ 继续打卡...';
+                return;
+            }
+            clockState.running = true;
+            clockState.paused = false;
+            clockState.seconds = 0;
+            clockState.startTimestamp = Date.now();
+            clockState.timer = setInterval(tick, 1000);
+            document.getElementById('clockStartBtn').disabled = true;
+            document.getElementById('clockPauseBtn').disabled = false;
+            document.getElementById('clockPauseBtn').textContent = '⏸ 暂停';
+            document.getElementById('clockStopBtn').disabled = false;
+            document.getElementById('clockStatus').innerHTML = '▶ 打卡进行中...';
+            updateTimerDisplay();
+            showToast('⏰ 开始打卡啦！', 'success');
+        }
+
+        function tick() {
+            if (!clockState.running || clockState.paused) return;
+            const elapsed = Math.floor((Date.now() - clockState.startTimestamp) / 1000);
+            clockState.seconds = elapsed;
+            updateTimerDisplay();
+        }
+
+        function pauseClock() {
+            if (!clockState.running || clockState.paused) return;
+            clockState.paused = true;
+            clockState.pausedSeconds = clockState.seconds;
+            if (clockState.timer) { clearInterval(clockState.timer); clockState.timer = null; }
+            document.getElementById('clockPauseBtn').textContent = '▶ 继续';
+            document.getElementById('clockStartBtn').disabled = false;
+            document.getElementById('clockStartBtn').textContent = '▶ 继续';
+            document.getElementById('clockStatus').innerHTML = '⏸ 已暂停';
+        }
+
+        function stopClock() {
+            if (!clockState.running) return;
+            if (clockState.timer) { clearInterval(clockState.timer); clockState.timer = null; }
+            clockState.running = false;
+            const mins = Math.floor(clockState.seconds / 60);
+            document.getElementById('clockStartBtn').disabled = true;
+            document.getElementById('clockPauseBtn').disabled = true;
+            document.getElementById('clockStopBtn').disabled = true;
+            if (mins >= MIN_DURATION) {
+                addRecord(clockState.subjectId, mins);
+                showToast(`🎉 打卡成功！+${mins} 积分`, 'success');
+                document.getElementById('clockStatus').innerHTML = `✅ 打卡完成！获得 ${mins} 积分 🎉`;
+                document.getElementById('clockInfo').innerHTML = '🎊 太棒了！继续加油！';
+                // 更新今日记录
+                const data = loadData();
+                const todayRecs = getTodayRecords(data, clockState.subjectId);
+                const totalDur = todayRecs.reduce((s,r) => s + r.duration, 0);
+                document.getElementById('clockRecords').textContent = `📌 今日已打卡 ${todayRecs.length} 次，共 ${totalDur} 分钟`;
+                setTimeout(() => closeClock(), 1500);
+            } else {
+                showToast(`⏳ 打卡 ${mins} 分钟，不足 ${MIN_DURATION} 分钟，无积分`, 'warning');
+                document.getElementById('clockStatus').innerHTML = `⏳ 打卡 ${mins} 分钟，不足 ${MIN_DURATION} 分钟，无积分`;
+                document.getElementById('clockInfo').innerHTML = '💪 再坚持一下，≥15分钟才能获得积分！';
+                setTimeout(() => {
+                    document.getElementById('clockStartBtn').disabled = false;
+                    document.getElementById('clockStartBtn').textContent = '🔄 重新开始';
+                    document.getElementById('clockPauseBtn').disabled = true;
+                    document.getElementById('clockStopBtn').disabled = true;
+                    clockState.running = false;
+                    clockState.paused = false;
+                    clockState.seconds = 0;
+                    updateTimerDisplay();
+                    document.getElementById('clockStatus').innerHTML = '⏳ 准备重新开始';
+                }, 500);
+            }
+        }
+
+        // Toast
+        let toastTimer = null;
+        function showToast(msg, type='info') {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.className = 'toast ' + type;
+            void el.offsetWidth;
+            el.classList.add('show');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
+        // ============================================================
+        // 导航与初始化
+        function navigateTo(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(n => n.classList.remove('active'));
+            if (page === 'home') {
+                document.getElementById('homePage').classList.add('active');
+                document.querySelector('.bottom-nav .nav-item[data-page="home"]').classList.add('active');
+                renderHome();
+            } else if (page === 'week') {
+                document.getElementById('weekPage').classList.add('active');
+                document.querySelector('.bottom-nav .nav-item[data-page="week"]').classList.add('active');
+                renderWeek();
+            } else if (page === 'month') {
+                document.getElementById('monthPage').classList.add('active');
+                document.querySelector('.bottom-nav .nav-item[data-page="month"]').classList.add('active');
+                renderMonth();
+            } else if (page === 'history') {
+                document.getElementById('historyPage').classList.add('active');
+                document.querySelector('.bottom-nav .nav-item[data-page="history"]').classList.add('active');
+                renderHistory();
+            }
+        }
+
+        // 清除所有记录
+        document.getElementById('clearAllBtn').addEventListener('click', function() {
+            if (confirm('确定要清除所有打卡记录吗？此操作不可撤销！')) {
+                saveData({ records: [] });
+                showToast('已清除所有记录', 'warning');
+                renderHistory();
+                renderHome();
+            }
+        });
+
+        // 事件绑定
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    navigateTo(this.dataset.page);
+                });
+            });
+            document.getElementById('clockBackBtn').addEventListener('click', closeClock);
+            document.getElementById('clockStartBtn').addEventListener('click', startClock);
+            document.getElementById('clockPauseBtn').addEventListener('click', pauseClock);
+            document.getElementById('clockStopBtn').addEventListener('click', stopClock);
+            renderHome();
+        });
+    </script>
+</body>
+</html>
