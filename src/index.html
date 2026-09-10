@@ -1,0 +1,2111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>旺旺家庭阅读打卡</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; overflow-x: hidden; }
+        body {
+            font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+            background: #f2f5f0;
+            background-image:
+                radial-gradient(circle at 20% 10%, rgba(255,214,165,0.4) 0%, transparent 40%),
+                radial-gradient(circle at 85% 90%, rgba(180,230,200,0.4) 0%, transparent 45%);
+            min-height: 100vh;
+            padding: 12px 12px calc(24px + env(safe-area-inset-bottom));
+            color: #1a202c;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        /* ===== 头部 ===== */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 4px 14px; margin-bottom: 12px;
+        }
+        .header h1 { font-size: 18px; font-weight: 800; color: #2d3748; }
+        .header .total-score {
+            background: linear-gradient(135deg, #ffca3a, #ff9f1c);
+            padding: 5px 14px; border-radius: 30px;
+            font-weight: 700; font-size: 14px; color: #fff;
+            box-shadow: 0 2px 8px rgba(255,159,28,0.35);
+            white-space: nowrap;
+        }
+        .header .total-score small { font-weight: 500; font-size: 11px; opacity: 0.95; }
+
+        /* ===== 通用卡片 ===== */
+        .card {
+            background: #fff; border-radius: 14px;
+            padding: 14px; margin-bottom: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .card-title {
+            font-weight: 700; font-size: 15px; color: #2d3748;
+            margin-bottom: 10px; display: flex; justify-content: space-between;
+            align-items: center;
+        }
+        .card-title small { font-weight: 400; font-size: 12px; color: #a0aec0; }
+
+        /* ===== 本周概览 ===== */
+        .week-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .week-day {
+            background: #f7fafc; border-radius: 8px;
+            padding: 7px 1px; text-align: center;
+            border: 1.5px solid transparent;
+        }
+        .week-day .wd-name { font-size: 10px; color: #718096; font-weight: 600; }
+        .week-day .wd-min { font-size: 11px; font-weight: 700; color: #2d3748; margin-top: 1px; }
+        .week-day .wd-tag {
+            font-size: 8px; font-weight: 700; border-radius: 6px;
+            padding: 1px 3px; display: inline-block; margin-top: 2px;
+            color: #a0aec0; background: #edf2f7;
+        }
+        .week-day.today { border-color: #07c160; background: #e8f7ee; }
+        .week-day.has { background: #e8f7ee; }
+        .week-day.has .wd-tag { background: #07c160; color: #fff; }
+
+        /* ===== 打卡人 ===== */
+        .person-row {
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px; margin-bottom: 12px;
+        }
+        .person-card {
+            background: #fff; border-radius: 14px;
+            padding: 12px 6px; text-align: center;
+            cursor: pointer; transition: 0.2s;
+            border: 2px solid transparent;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .person-card:active { transform: scale(0.96); }
+        .person-card.selected {
+            border-color: #07c160; background: #e8f7ee;
+            box-shadow: 0 3px 14px rgba(7,193,96,0.25);
+        }
+        .person-card .p-avatar { font-size: 26px; line-height: 1; }
+        .person-card .p-name { font-weight: 700; font-size: 14px; color: #2d3748; margin-top: 3px; }
+        .person-card .p-info { font-size: 11px; color: #718096; margin-top: 1px; }
+        .person-card .p-badge {
+            position: absolute; top: 5px; right: 5px;
+            font-size: 9px; padding: 2px 6px; border-radius: 20px;
+            font-weight: 700; color: #fff; background: #07c160;
+        }
+        .person-card .p-badge.none { background: #e2e8f0; color: #a0aec0; }
+
+        /* ===== 表单 ===== */
+        .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .field { display: flex; flex-direction: column; }
+        .field label { font-size: 12px; font-weight: 600; color: #4a5568; margin-bottom: 4px; }
+        .field input {
+            padding: 9px 11px; border: 2px solid #e2e8f0;
+            border-radius: 10px; font-size: 14px; outline: none;
+            font-family: inherit; background: #f7fafc;
+            transition: 0.15s; width: 100%;
+        }
+        .field input:focus { border-color: #07c160; background: #fff; }
+
+        /* ===== 打卡方式（大按钮） ===== */
+        .checkin-methods {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .method-btn {
+            background: linear-gradient(135deg, #fff, #f7fafc);
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 18px 10px;
+            cursor: pointer;
+            transition: 0.15s;
+            text-align: center;
+            font-family: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .method-btn:active { transform: scale(0.96); }
+        .method-btn .m-icon { font-size: 34px; line-height: 1; }
+        .method-btn .m-label { font-weight: 800; font-size: 14px; color: #2d3748; }
+        .method-btn .m-sub { font-size: 11px; color: #a0aec0; }
+        .method-btn.audio { border-color: #a78bfa; background: linear-gradient(135deg, #faf5ff, #f3e8ff); }
+        .method-btn.audio:active { background: #ede9fe; }
+        .method-btn.audio .m-icon { color: #7c3aed; }
+        .method-btn.video { border-color: #fb7185; background: linear-gradient(135deg, #fff1f2, #ffe4e6); }
+        .method-btn.video:active { background: #fecdd3; }
+        .method-btn.video .m-icon { color: #e11d48; }
+
+        /* ===== 计时器 ===== */
+        .timer-card {
+            background: #fff; border-radius: 14px;
+            padding: 16px; margin-bottom: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .timer-card .subject-label {
+            font-size: 15px; font-weight: 700; color: #2d3748;
+            margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+        }
+        .timer-display {
+            font-size: 42px; font-weight: 300;
+            font-family: 'SF Mono', 'Courier New', monospace;
+            background: #f7fafc; padding: 12px 8px;
+            border-radius: 12px; text-align: center;
+            color: #1a202c; letter-spacing: 1px;
+            border: 2px solid #edf2f7;
+        }
+        .timer-display .unit { font-size: 16px; color: #a0aec0; }
+        .timer-status {
+            text-align: center; font-size: 13px; color: #718096;
+            margin: 8px 0 12px; min-height: 18px; font-weight: 500;
+        }
+        .timer-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .timer-controls button {
+            padding: 11px 4px; border: none; border-radius: 10px;
+            font-size: 14px; font-weight: 700; cursor: pointer;
+            transition: 0.15s; color: #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            font-family: inherit;
+        }
+        .timer-controls button:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+        .timer-controls button:active:not(:disabled) { transform: scale(0.94); }
+        .btn-start { background: #07c160; }
+        .btn-pause { background: #f5a623; }
+        .btn-stop  { background: #e74c3c; }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #07c160, #05a050);
+            color: #fff; border: none; padding: 14px; border-radius: 12px;
+            font-size: 16px; font-weight: 700; cursor: pointer;
+            width: 100%; margin-top: 12px; transition: 0.15s;
+            box-shadow: 0 3px 12px rgba(7,193,96,0.3); font-family: inherit;
+        }
+        .btn-submit:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+        .btn-submit:active:not(:disabled) { transform: scale(0.97); }
+
+        /* ===== 已录制附件 ===== */
+        .attach-list { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+        .attach-item {
+            background: #f7fafc; padding: 8px 10px;
+            border-radius: 10px; font-size: 12px;
+            display: flex; align-items: center; gap: 8px;
+            border: 1px solid #edf2f7;
+        }
+        .attach-item .a-icon { font-size: 18px; }
+        .attach-item .a-info { flex: 1; min-width: 0; }
+        .attach-item .a-name {
+            font-weight: 600; color: #2d3748;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .attach-item .a-meta { font-size: 11px; color: #a0aec0; margin-top: 1px; }
+        .attach-item .a-del {
+            color: #fc8181; font-weight: 700; cursor: pointer;
+            padding: 4px 8px; border-radius: 6px;
+            font-size: 14px; flex-shrink: 0;
+        }
+        .attach-item .a-del:active { background: #fff5f5; }
+        .attach-item audio, .attach-item video {
+            max-width: 100%; margin-top: 4px; border-radius: 6px;
+        }
+
+        /* ===== 记录列表 ===== */
+        .record-item {
+            display: flex; flex-direction: column;
+            padding: 10px 0; border-bottom: 1px solid #f0f4f8;
+            font-size: 13px;
+        }
+        .record-item:last-child { border-bottom: none; }
+        .record-item .ri-top {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 4px;
+        }
+        .record-item .ri-person {
+            display: flex; align-items: center; gap: 4px;
+            font-weight: 700; color: #2d3748;
+        }
+        .record-item .ri-person .avatar { font-size: 15px; }
+        .record-item .ri-duration { color: #07c160; font-weight: 700; }
+        .record-item .ri-score { color: #d68910; font-weight: 700; margin-left: 6px; }
+        .record-item .ri-book {
+            color: #4a5568; font-size: 12px;
+            display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px;
+        }
+        .record-item .ri-tag {
+            background: #edf2f7; color: #4a5568;
+            padding: 1px 7px; border-radius: 8px; font-size: 11px;
+        }
+        .record-item .ri-tag.review-tag { background: #f3e8ff; color: #7c3aed; }
+        .record-item .review-preview {
+            margin-top: 6px; background: #faf5ff;
+            border-left: 3px solid #7c3aed;
+            padding: 8px 10px; border-radius: 8px;
+            font-size: 12px; color: #4a5568;
+            line-height: 1.6; white-space: pre-wrap;
+        }
+        .record-item .review-preview .rp-title {
+            font-weight: 700; color: #7c3aed; margin-bottom: 4px;
+            display: flex; align-items: center; gap: 4px;
+        }
+
+        /* ===== 书籍汇总 ===== */
+        .book-card {
+            background: linear-gradient(135deg, #fff, #f8fafc);
+            border-radius: 14px; padding: 14px;
+            margin-bottom: 10px; border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .book-card .bc-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 8px; gap: 8px;
+        }
+        .book-card .bc-title {
+            font-weight: 800; font-size: 15px; color: #2d3748;
+            display: flex; align-items: center; gap: 6px; flex: 1;
+            min-width: 0;
+        }
+        .book-card .bc-title .bc-emoji { font-size: 20px; flex-shrink: 0; }
+        .book-card .bc-title .bc-name {
+            overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .book-card .bc-stats {
+            font-size: 11px; color: #a0aec0;
+            display: flex; gap: 8px; flex-shrink: 0;
+            text-align: right; line-height: 1.5;
+        }
+        .book-card .bc-actions {
+            display: flex; gap: 6px; flex-wrap: wrap;
+        }
+        .book-card .bc-btn {
+            padding: 7px 14px; border: none; border-radius: 8px;
+            font-size: 12px; font-weight: 700;
+            cursor: pointer; font-family: inherit;
+            transition: 0.15s;
+        }
+        .book-card .bc-btn:active { transform: scale(0.96); }
+        .book-card .bc-btn.primary {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(124,58,237,0.3);
+        }
+        .book-card .bc-btn.secondary {
+            background: #edf2f7; color: #4a5568;
+        }
+        .book-card .bc-summary {
+            margin-top: 10px; background: #faf5ff;
+            border-radius: 10px; padding: 12px;
+            font-size: 13px; line-height: 1.8; color: #1a202c;
+            white-space: pre-wrap;
+            border-left: 3px solid #7c3aed;
+            display: none;
+        }
+        .book-card .bc-summary.show { display: block; }
+        .book-card .bc-summary .bcs-title {
+            font-weight: 700; color: #7c3aed;
+            margin-bottom: 6px; font-size: 13px;
+            display: flex; justify-content: space-between;
+            align-items: center;
+        }
+        .book-card .bc-reviews-list {
+            margin-top: 10px; padding-top: 10px;
+            border-top: 1px dashed #e2e8f0;
+            display: none;
+        }
+        .book-card .bc-reviews-list.show { display: block; }
+        .book-card .bc-review-item {
+            background: #f7fafc; border-radius: 8px;
+            padding: 8px 10px; margin-bottom: 6px;
+            font-size: 12px; color: #4a5568;
+            line-height: 1.6;
+        }
+        .book-card .bc-review-item .bcr-meta {
+            font-size: 11px; color: #a0aec0;
+            margin-bottom: 3px; display: flex; gap: 6px;
+        }
+
+        /* ===== 排行榜 ===== */
+        .rank-item {
+            display: flex; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid #f0f4f8;
+        }
+        .rank-item:last-child { border-bottom: none; }
+        .rank-item .r-medal { font-size: 20px; width: 34px; text-align: center; flex-shrink: 0; }
+        .rank-item .r-avatar { font-size: 22px; margin-right: 10px; }
+        .rank-item .r-name { font-weight: 700; color: #2d3748; flex: 1; }
+        .rank-item .r-stat { font-size: 12px; color: #a0aec0; margin-right: 10px; text-align: right; }
+        .rank-item .r-score { font-size: 16px; font-weight: 800; color: #d68910; min-width: 55px; text-align: right; }
+
+        /* ===== 周总结 ===== */
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .summary-item {
+            background: #f7fafc; border-radius: 10px;
+            padding: 10px 6px; text-align: center;
+        }
+        .summary-item .si-avatar { font-size: 22px; }
+        .summary-item .si-name { font-size: 12px; font-weight: 700; color: #2d3748; margin-top: 2px; }
+        .summary-item .si-detail { font-size: 11px; color: #718096; margin-top: 1px; }
+        .summary-item .si-score { font-size: 12px; font-weight: 700; color: #d68910; margin-top: 2px; }
+
+        .reward-box {
+            background: linear-gradient(135deg, #fff8e6, #ffedcc);
+            border-radius: 10px; padding: 10px 14px;
+            border: 1.5px dashed #f5a623;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 8px; flex-wrap: wrap; gap: 6px;
+        }
+        .reward-box .reward-label { font-weight: 600; color: #7d5a00; font-size: 13px; }
+        .reward-box .reward-value { font-size: 18px; font-weight: 800; color: #d68910; }
+
+        .empty-text { color: #a0aec0; text-align: center; padding: 14px 0; font-size: 13px; }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed; bottom: calc(30px + env(safe-area-inset-bottom));
+            left: 50%; transform: translateX(-50%) translateY(20px);
+            background: rgba(26,32,44,0.92);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            color: #fff; padding: 11px 22px; border-radius: 10px;
+            font-size: 14px; font-weight: 500;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+            z-index: 9999; opacity: 0; transition: 0.3s;
+            max-width: calc(100vw - 40px); text-align: center; pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.success { background: rgba(7,193,96,0.95); }
+        .toast.error   { background: rgba(231,76,60,0.95); }
+        .toast.warning { background: rgba(245,166,35,0.95); }
+
+        /* ===== 操作 ===== */
+        .action-row { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+        .clear-btn {
+            background: #fff; color: #e74c3c;
+            border: 1.5px solid #fed7d7;
+            padding: 9px 16px; border-radius: 10px;
+            font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: 0.15s; font-family: inherit;
+        }
+        .clear-btn:active { background: #fff5f5; }
+        .clear-btn.gray { color: #718096; border-color: #e2e8f0; }
+
+        /* ===== 全屏弹窗（录音/录像/读后感） ===== */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none; align-items: center; justify-content: center;
+            z-index: 10000; padding: 16px;
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-content {
+            background: #fff; border-radius: 20px;
+            width: 100%; max-width: 460px;
+            max-height: 92vh;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            animation: modalIn 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.94); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        .modal-header {
+            padding: 14px 18px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #f0f4f8; flex-shrink: 0;
+        }
+        .modal-header .mh-title {
+            font-size: 16px; font-weight: 800; color: #2d3748;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .modal-header .mh-close {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: #f0f4f8; border: none; font-size: 16px;
+            cursor: pointer; color: #718096;
+            font-family: inherit;
+        }
+        .modal-body {
+            padding: 16px 18px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            flex: 1;
+        }
+
+        /* 录音/录像可视化 */
+        .media-preview {
+            background: #1a202c; border-radius: 14px;
+            min-height: 180px;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+            margin-bottom: 14px;
+        }
+        .media-preview video {
+            width: 100%; height: 100%;
+            max-height: 320px; object-fit: cover;
+        }
+        .media-preview .mp-timer {
+            position: absolute; top: 12px; left: 12px;
+            background: rgba(0,0,0,0.6); color: #fff;
+            padding: 4px 10px; border-radius: 20px;
+            font-size: 13px; font-weight: 700;
+            font-family: 'SF Mono', monospace;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .media-preview .mp-timer .rec-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #ef4444; animation: pulseDot 1s infinite;
+        }
+        @keyframes pulseDot {
+            0%,100% { opacity: 1; }
+            50%     { opacity: 0.3; }
+        }
+        .media-preview .mp-wave {
+            display: flex; align-items: center; gap: 3px;
+            height: 60px;
+        }
+        .media-preview .mp-wave span {
+            width: 5px; background: linear-gradient(180deg, #7c3aed, #06b6d4);
+            border-radius: 3px;
+            animation: waveAnim 0.8s ease-in-out infinite;
+        }
+        @keyframes waveAnim {
+            0%,100% { height: 12px; }
+            50%     { height: 50px; }
+        }
+
+        .rec-controls {
+            display: flex; justify-content: center; gap: 14px;
+            margin-bottom: 14px;
+        }
+        .rec-btn-lg {
+            width: 62px; height: 62px; border-radius: 50%;
+            border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px; color: #fff;
+            font-family: inherit;
+            transition: 0.15s;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+        }
+        .rec-btn-lg:active { transform: scale(0.92); }
+        .rec-btn-lg.stop { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .rec-btn-lg.start { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+        .rec-btn-lg.ghost {
+            background: #edf2f7; color: #4a5568;
+            width: 46px; height: 46px; font-size: 18px;
+            box-shadow: none;
+        }
+        .rec-hint { text-align: center; font-size: 13px; color: #718096; }
+
+        /* 语音识别结果 */
+        .asr-box {
+            background: #f0fdf4; border: 1px solid #bbf7d0;
+            border-radius: 10px; padding: 10px 12px;
+            margin-top: 10px; font-size: 13px;
+            color: #166534; min-height: 44px; line-height: 1.6;
+        }
+        .asr-box .asr-label {
+            font-weight: 700; font-size: 12px; color: #16a34a;
+            margin-bottom: 4px;
+            display: flex; justify-content: space-between;
+        }
+        .asr-box .asr-text.empty { color: #a0aec0; font-style: italic; }
+
+        /* 读后感表单 */
+        .review-section { margin-bottom: 12px; }
+        .review-section .rs-label {
+            font-size: 13px; font-weight: 700; color: #4a5568;
+            margin-bottom: 6px;
+            display: flex; justify-content: space-between;
+            align-items: center;
+        }
+        .review-section .rs-label small {
+            font-weight: 400; font-size: 11px; color: #a0aec0;
+        }
+        .review-textarea {
+            width: 100%; padding: 12px;
+            border: 2px solid #e9d5ff; border-radius: 10px;
+            font-size: 14px; font-family: inherit;
+            outline: none; resize: vertical;
+            min-height: 140px; line-height: 1.7;
+            background: #faf5ff; color: #1a202c;
+            transition: 0.15s;
+        }
+        .review-textarea:focus { border-color: #7c3aed; background: #fff; }
+
+        .btn-generate {
+            width: 100%; padding: 12px;
+            border: none; border-radius: 10px;
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            color: #fff; font-size: 15px; font-weight: 700;
+            cursor: pointer; font-family: inherit;
+            margin-bottom: 10px;
+            box-shadow: 0 3px 12px rgba(124,58,237,0.3);
+            transition: 0.15s;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-generate:active { transform: scale(0.97); }
+        .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+        .modal-footer {
+            padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
+            border-top: 1px solid #f0f4f8;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            flex-shrink: 0;
+        }
+        .modal-footer button {
+            padding: 12px; border: none; border-radius: 10px;
+            font-size: 15px; font-weight: 700;
+            cursor: pointer; font-family: inherit;
+            transition: 0.15s;
+        }
+        .modal-footer .btn-cancel { background: #edf2f7; color: #4a5568; }
+        .modal-footer .btn-save {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            color: #fff;
+            box-shadow: 0 3px 12px rgba(124,58,237,0.3);
+        }
+        .modal-footer button:active { transform: scale(0.97); }
+
+        /* 加载动画 */
+        .loading-dots { display: inline-flex; gap: 3px; margin-left: 4px; }
+        .loading-dots span {
+            width: 5px; height: 5px; border-radius: 50%; background: #fff;
+            animation: dotPulse 1s infinite;
+        }
+        .loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes dotPulse {
+            0%,100% { opacity: 0.3; }
+            50%     { opacity: 1; }
+        }
+
+        @media (max-width: 360px) {
+            body { padding: 10px 10px calc(20px + env(safe-area-inset-bottom)); }
+            .header h1 { font-size: 16px; }
+            .timer-display { font-size: 36px; padding: 10px 6px; }
+            .person-card .p-avatar { font-size: 22px; }
+            .method-btn .m-icon { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 头部 -->
+    <div class="header">
+        <h1>🐶 旺旺家庭阅读打卡</h1>
+        <div class="total-score">⭐ <span id="totalScore">0</span> <small>分</small></div>
+    </div>
+
+    <!-- 本周概览 -->
+    <div class="card">
+        <div class="card-title">
+            <span>📅 本周打卡</span>
+            <small id="weekRangeLabel"></small>
+        </div>
+        <div class="week-days" id="weekDays"></div>
+    </div>
+
+    <!-- 打卡人 -->
+    <div class="person-row" id="personRow"></div>
+
+    <!-- 阅读信息 -->
+    <div class="card">
+        <div class="card-title"><span>📖 阅读信息</span><small>选填</small></div>
+        <div class="field-row">
+            <div class="field">
+                <label>书名</label>
+                <input type="text" id="bookName" placeholder="如：西游记" maxlength="30" />
+            </div>
+            <div class="field">
+                <label>章节</label>
+                <input type="text" id="bookChapter" placeholder="如：第3回" maxlength="20" />
+            </div>
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label>单元</label>
+                <input type="text" id="bookUnit" placeholder="如：第二单元" maxlength="20" />
+            </div>
+            <div class="field">
+                <label>节次</label>
+                <input type="text" id="bookSection" placeholder="如：第2节" maxlength="20" />
+            </div>
+        </div>
+    </div>
+
+    <!-- 打卡方式 -->
+    <div class="checkin-methods">
+        <button class="method-btn audio" onclick="openAudioCheckin()">
+            <div class="m-icon">🎤</div>
+            <div class="m-label">音频打卡</div>
+            <div class="m-sub">点击直接录音</div>
+        </button>
+        <button class="method-btn video" onclick="openVideoCheckin()">
+            <div class="m-icon">🎬</div>
+            <div class="m-label">视频打卡</div>
+            <div class="m-sub">点击直接录像</div>
+        </button>
+    </div>
+
+    <!-- 计时器 -->
+    <div class="timer-card">
+        <div class="subject-label" id="timerSubjectLabel">👆 请先选择打卡人</div>
+        <div class="timer-display" id="timerDisplay">00<span class="unit">:</span>00<span class="unit">:</span>00</div>
+        <div class="timer-status" id="timerStatus">选择打卡人后开始</div>
+        <div class="timer-controls">
+            <button class="btn-start" id="btnStart" onclick="startTimer()">▶ 开始</button>
+            <button class="btn-pause" id="btnPause" onclick="pauseTimer()" disabled>⏸ 暂停</button>
+            <button class="btn-stop"  id="btnStop"  onclick="stopTimer()"  disabled>⏹ 结束</button>
+        </div>
+
+        <!-- 已录制附件 -->
+        <div id="attachListWrap" style="display:none; margin-top:12px;">
+            <div style="font-size:13px;font-weight:600;color:#4a5568;margin-bottom:6px;">📎 已录制</div>
+            <div class="attach-list" id="attachList"></div>
+        </div>
+
+        <button class="btn-submit" id="btnSubmit" onclick="submitCheckin()" disabled>✅ 提交打卡</button>
+    </div>
+
+    <!-- 今日记录 -->
+    <div class="card">
+        <div class="card-title">
+            <span>📋 今日记录</span>
+            <span id="todayCount" style="color:#a0aec0;font-weight:500;font-size:13px;">0 条</span>
+        </div>
+        <div id="todayList"><div class="empty-text">暂无打卡</div></div>
+    </div>
+
+    <!-- 书籍读后感汇总 -->
+    <div class="card">
+        <div class="card-title">
+            <span>📚 整本书读后感汇总</span>
+            <small id="bookCount">0 本</small>
+        </div>
+        <div id="bookList"><div class="empty-text">暂无书籍记录</div></div>
+    </div>
+
+    <!-- 本月排行榜 -->
+    <div class="card">
+        <div class="card-title">
+            <span>🏆 本月积分排行榜</span>
+            <small id="monthLabel"></small>
+        </div>
+        <div id="rankList"><div class="empty-text">本月暂无打卡</div></div>
+    </div>
+
+    <!-- 本周总结 -->
+    <div class="card">
+        <div class="card-title">
+            <span>🏅 本周总结</span>
+            <small id="weekSummaryRange"></small>
+        </div>
+        <div id="weekSummary"><div class="empty-text">加载中...</div></div>
+    </div>
+
+    <!-- 操作 -->
+    <div class="action-row">
+        <button class="clear-btn" onclick="clearAllCheckins()">🗑️ 清除打卡记录</button>
+        <button class="clear-btn gray" onclick="resetAll()">🔄 重置</button>
+    </div>
+
+    <!-- ============================================
+         弹窗：音频打卡
+         ============================================ -->
+    <div class="modal-overlay" id="audioModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="mh-title">🎤 音频打卡</div>
+                <button class="mh-close" onclick="closeAudioModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="media-preview" id="audioPreview">
+                    <div class="mp-timer" id="audioTimer" style="display:none;">
+                        <span class="rec-dot"></span><span id="audioTimerText">00:00</span>
+                    </div>
+                    <div class="mp-wave" id="audioWave">
+                        <span style="animation-delay:0s"></span>
+                        <span style="animation-delay:0.1s"></span>
+                        <span style="animation-delay:0.2s"></span>
+                        <span style="animation-delay:0.3s"></span>
+                        <span style="animation-delay:0.4s"></span>
+                        <span style="animation-delay:0.5s"></span>
+                        <span style="animation-delay:0.6s"></span>
+                    </div>
+                </div>
+                <div class="rec-controls">
+                    <button class="rec-btn-lg start" id="audioRecBtn" onclick="toggleAudioRecording()">🎤</button>
+                </div>
+                <div class="rec-hint" id="audioHint">点击麦克风开始录音</div>
+                <div id="audioPlaybackWrap" style="display:none;margin-top:12px;">
+                    <div style="font-size:12px;font-weight:600;color:#4a5568;margin-bottom:6px;">🔊 试听</div>
+                    <audio id="audioPlayback" controls style="width:100%;"></audio>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeAudioModal()">取消</button>
+                <button class="btn-save" onclick="saveAudioCheckin()">✅ 保存音频</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         弹窗：视频打卡
+         ============================================ -->
+    <div class="modal-overlay" id="videoModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="mh-title">🎬 视频打卡</div>
+                <button class="mh-close" onclick="closeVideoModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="media-preview" id="videoPreview">
+                    <video id="videoEl" autoplay muted playsinline></video>
+                    <div class="mp-timer" id="videoTimer" style="display:none;">
+                        <span class="rec-dot"></span><span id="videoTimerText">00:00</span>
+                    </div>
+                </div>
+                <div class="rec-controls">
+                    <button class="rec-btn-lg start" id="videoRecBtn" onclick="toggleVideoRecording()">🎬</button>
+                    <button class="rec-btn-lg ghost" onclick="switchCamera()" title="切换摄像头">🔄</button>
+                </div>
+                <div class="rec-hint" id="videoHint">点击开始录像，再次点击停止</div>
+                <div id="videoPlaybackWrap" style="display:none;margin-top:12px;">
+                    <div style="font-size:12px;font-weight:600;color:#4a5568;margin-bottom:6px;">▶️ 回放</div>
+                    <video id="videoPlayback" controls playsinline style="width:100%;border-radius:10px;"></video>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeVideoModal()">取消</button>
+                <button class="btn-save" onclick="saveVideoCheckin()">✅ 保存视频</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         弹窗：读后感（录音+AI编辑）
+         ============================================ -->
+    <div class="modal-overlay" id="reviewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="mh-title">✨ 读后感</div>
+                <button class="mh-close" onclick="closeReviewModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="reviewMetaInfo" style="background:#f0fdf4;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:#166534;line-height:1.6;"></div>
+
+                <!-- 录音区 -->
+                <div class="media-preview" id="reviewRecPreview" style="min-height:120px;background:linear-gradient(135deg,#faf5ff,#f3e8ff);">
+                    <div class="mp-timer" id="reviewTimer" style="display:none;background:rgba(124,58,237,0.8);">
+                        <span class="rec-dot"></span><span id="reviewTimerText">00:00</span>
+                    </div>
+                    <div class="mp-wave" id="reviewWave" style="display:none;">
+                        <span style="animation-delay:0s"></span>
+                        <span style="animation-delay:0.1s"></span>
+                        <span style="animation-delay:0.2s"></span>
+                        <span style="animation-delay:0.3s"></span>
+                        <span style="animation-delay:0.4s"></span>
+                        <span style="animation-delay:0.5s"></span>
+                        <span style="animation-delay:0.6s"></span>
+                    </div>
+                    <div id="reviewPreviewPlaceholder" style="color:#a78bfa;font-size:14px;font-weight:600;">
+                        🎤 点击下方按钮说读后感
+                    </div>
+                </div>
+                <div class="rec-controls">
+                    <button class="rec-btn-lg start" id="reviewRecBtn" onclick="toggleReviewRecording()">🎤</button>
+                </div>
+                <div class="rec-hint" id="reviewRecHint">点击麦克风开始录音</div>
+
+                <!-- 语音识别结果 -->
+                <div class="asr-box" style="margin-top:12px;">
+                    <div class="asr-label">
+                        <span>📝 语音识别</span>
+                        <span id="reviewAsrStatus" style="font-size:11px;color:#16a34a;"></span>
+                    </div>
+                    <div class="asr-text empty" id="reviewAsrText">识别结果会显示在这里…</div>
+                </div>
+
+                <!-- AI 生成按钮 -->
+                <button class="btn-generate" id="btnGenerate" onclick="generateReview()" style="margin-top:12px;">
+                    <span>🪄</span> AI 智慧编辑文字
+                </button>
+
+                <!-- 读后感文本 -->
+                <div class="review-section">
+                    <div class="rs-label">
+                        <span>📄 读后感文字</span>
+                        <small>可手动修改</small>
+                    </div>
+                    <textarea class="review-textarea" id="reviewText" placeholder="点击上方按钮 AI 生成，或直接手写…"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeReviewModal()">取消</button>
+                <button class="btn-save" onclick="saveReview()">💾 保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =============================================================
+        //  基础配置
+        // =============================================================
+        const PERSONS = [
+            { id: 'baba', name: '爸爸', avatar: '👨' },
+            { id: 'mama', name: '妈妈', avatar: '👩' },
+            { id: 'wang', name: '旺旺', avatar: '🧒' }
+        ];
+        function calcScore(min) { return Math.round(min * 0.1 * 10) / 10; }
+        const WEEK_REWARD_DAYS = 5;
+        const WEEK_REWARD_POINTS = 10;
+        const STORAGE_KEY = 'wangwang_family_reading_v3';
+
+        function getDefaultData() {
+            return { checkins: [], bookSummaries: {} };
+        }
+        function loadData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const d = JSON.parse(raw);
+                    if (!Array.isArray(d.checkins)) d.checkins = [];
+                    if (!d.bookSummaries) d.bookSummaries = {};
+                    return d;
+                }
+            } catch (_) {}
+            return getDefaultData();
+        }
+        function saveData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+        let appData = loadData();
+
+        // ===== 工具 =====
+        function getTodayStr() {
+            const d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        }
+        function parseDate(s) { const p = s.split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); }
+        function formatDate(d) {
+            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        }
+        function getMonday(date) {
+            const d = new Date(date);
+            const day = d.getDay() || 7;
+            const diff = day - 1;
+            const m = new Date(d);
+            m.setDate(d.getDate() - diff);
+            m.setHours(0,0,0,0);
+            return m;
+        }
+        function getWeekDates(date) {
+            const monday = getMonday(date);
+            const arr = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                arr.push(d);
+            }
+            return arr;
+        }
+        function showToast(msg, type = 'info', duration = 2500) {
+            const old = document.querySelector('.toast');
+            if (old) old.remove();
+            const div = document.createElement('div');
+            div.className = `toast ${type}`;
+            div.textContent = msg;
+            document.body.appendChild(div);
+            void div.offsetWidth;
+            div.classList.add('show');
+            setTimeout(() => { if (div.parentNode) div.remove(); }, duration);
+        }
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+        }
+        function blobToBase64(blob) {
+            return new Promise(resolve => {
+                const r = new FileReader();
+                r.onload = e => resolve(e.target.result);
+                r.readAsDataURL(blob);
+            });
+        }
+
+        // =============================================================
+        //  核心业务
+        // =============================================================
+        function getPersonTodayTotal(date, pid) {
+            return appData.checkins
+                .filter(c => c.date === date && c.person === pid)
+                .reduce((s, c) => s + c.duration, 0);
+        }
+        function getPersonTodayScore(date, pid) {
+            return appData.checkins
+                .filter(c => c.date === date && c.person === pid)
+                .reduce((s, c) => s + (c.score || 0), 0);
+        }
+        function getDailyTotal(date) {
+            return appData.checkins
+                .filter(c => c.date === date)
+                .reduce((s, c) => s + c.duration, 0);
+        }
+        function getPersonScoreInRange(pid, start, end) {
+            return appData.checkins
+                .filter(c => c.person === pid)
+                .filter(c => {
+                    const d = parseDate(c.date);
+                    return d >= start && d <= end;
+                })
+                .reduce((s, c) => s + (c.score || 0), 0);
+        }
+        function getPersonDaysInRange(pid, start, end) {
+            const days = new Set();
+            appData.checkins.filter(c => c.person === pid).forEach(c => {
+                const d = parseDate(c.date);
+                if (d >= start && d <= end) days.add(c.date);
+            });
+            return days.size;
+        }
+        function calcTotalScore() {
+            let total = appData.checkins.reduce((s, c) => s + (c.score || 0), 0);
+            const wk = new Map();
+            for (const c of appData.checkins) {
+                const d = parseDate(c.date);
+                const k = getMonday(d).getTime();
+                if (!wk.has(k)) wk.set(k, new Set());
+                wk.get(k).add(c.date);
+            }
+            for (const [, dates] of wk) if (dates.size >= WEEK_REWARD_DAYS) total += WEEK_REWARD_POINTS;
+            return Math.round(total * 10) / 10;
+        }
+        /** 获取所有读过的书 */
+        function getAllBooks() {
+            const map = new Map();
+            for (const c of appData.checkins) {
+                if (!c.book || !c.book.trim()) continue;
+                const key = c.book.trim();
+                if (!map.has(key)) map.set(key, {
+                    name: key,
+                    count: 0,
+                    duration: 0,
+                    records: [],
+                    reviews: []
+                });
+                const b = map.get(key);
+                b.count++;
+                b.duration += c.duration;
+                b.records.push(c);
+                if (c.review && c.review.trim()) {
+                    b.reviews.push({
+                        person: c.person,
+                        date: c.date,
+                        chapter: c.chapter,
+                        text: c.review
+                    });
+                }
+            }
+            return [...map.values()].sort((a, b) => b.records.length - a.records.length);
+        }
+
+        // =============================================================
+        //  渲染
+        // =============================================================
+        function renderWeekOverview() {
+            const todayStr = getTodayStr();
+            const weekDates = getWeekDates(new Date());
+            const names = ['一','二','三','四','五','六','日'];
+            const m = weekDates[0], s = weekDates[6];
+            document.getElementById('weekRangeLabel').textContent =
+                (m.getMonth()+1) + '/' + m.getDate() + ' - ' + (s.getMonth()+1) + '/' + s.getDate();
+
+            let html = '';
+            weekDates.forEach((d, i) => {
+                const dateStr = formatDate(d);
+                const total = getDailyTotal(dateStr);
+                const isToday = dateStr === todayStr;
+                const has = total > 0;
+                html += `
+                    <div class="week-day ${has ? 'has' : ''} ${isToday ? 'today' : ''}">
+                        <div class="wd-name">${names[i]}</div>
+                        <div class="wd-min">${total > 0 ? total : 0}</div>
+                        <div class="wd-tag">${has ? '√' : '—'}</div>
+                    </div>
+                `;
+            });
+            document.getElementById('weekDays').innerHTML = html;
+        }
+
+        function renderPersons() {
+            const today = getTodayStr();
+            const selected = window._selectedPerson || null;
+            let html = '';
+            for (const p of PERSONS) {
+                const total = getPersonTodayTotal(today, p.id);
+                const score = getPersonTodayScore(today, p.id);
+                const has = total > 0;
+                const sel = (selected === p.id) ? 'selected' : '';
+                html += `
+                    <div class="person-card ${sel}" onclick="selectPerson('${p.id}')">
+                        <div class="p-badge ${has ? '' : 'none'}">${has ? '√' : '—'}</div>
+                        <div class="p-avatar">${p.avatar}</div>
+                        <div class="p-name">${p.name}</div>
+                        <div class="p-info">${total}分 · ${score}分</div>
+                    </div>
+                `;
+            }
+            document.getElementById('personRow').innerHTML = html;
+        }
+
+        function renderTodayRecords() {
+            const today = getTodayStr();
+            const records = appData.checkins.filter(c => c.date === today);
+            document.getElementById('todayCount').textContent = records.length + ' 条';
+            const list = document.getElementById('todayList');
+            if (!records.length) {
+                list.innerHTML = '<div class="empty-text">暂无打卡</div>';
+                return;
+            }
+            let html = '';
+            for (const rec of records) {
+                const p = PERSONS.find(x => x.id === rec.person);
+                const avatar = p ? p.avatar : '❓';
+                const name = p ? p.name : '未知';
+
+                const bookParts = [];
+                if (rec.book) bookParts.push(`📕 ${rec.book}`);
+                if (rec.chapter) bookParts.push(rec.chapter);
+                if (rec.unit) bookParts.push(rec.unit);
+                if (rec.section) bookParts.push(rec.section);
+                const bookLine = bookParts.length
+                    ? `<div class="ri-book">${bookParts.map(t => `<span class="ri-tag">${escapeHtml(t)}</span>`).join('')}</div>`
+                    : '';
+
+                // 打卡证据标签
+                const evidenceTags = [];
+                if (rec.audioData) evidenceTags.push('<span class="ri-tag">🎤 音频</span>');
+                if (rec.videoData) evidenceTags.push('<span class="ri-tag">🎬 视频</span>');
+                if (rec.review && rec.review.trim()) evidenceTags.push('<span class="ri-tag review-tag">✨ 读后感</span>');
+                const evidenceLine = evidenceTags.length ? `<div class="ri-book" style="margin-top:4px;">${evidenceTags.join('')}</div>` : '';
+
+                let reviewBlock = '';
+                if (rec.review && rec.review.trim()) {
+                    reviewBlock = `
+                        <div class="review-preview">
+                            <div class="rp-title">✨ 读后感</div>
+                            ${escapeHtml(rec.review)}
+                        </div>
+                    `;
+                }
+
+                html += `
+                    <div class="record-item">
+                        <div class="ri-top">
+                            <span class="ri-person"><span class="avatar">${avatar}</span>${name}</span>
+                            <span>
+                                <span class="ri-duration">${rec.duration}分钟</span>
+                                <span class="ri-score">+${rec.score || 0}分</span>
+                            </span>
+                        </div>
+                        ${bookLine}
+                        ${evidenceLine}
+                        ${reviewBlock}
+                        <div style="margin-top:6px;">
+                            <button class="bc-btn secondary" style="padding:5px 12px;font-size:12px;background:#f3e8ff;color:#7c3aed;" onclick="openReviewModal('${rec.id}')">
+                                ${rec.review ? '📖 查看/编辑读后感' : '✨ 添加读后感'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            list.innerHTML = html;
+        }
+
+        function renderBookSummaries() {
+            const books = getAllBooks();
+            document.getElementById('bookCount').textContent = books.length + ' 本';
+            const container = document.getElementById('bookList');
+            if (!books.length) {
+                container.innerHTML = '<div class="empty-text">暂无书籍记录（打卡时填写书名后显示）</div>';
+                return;
+            }
+            let html = '';
+            books.forEach(b => {
+                const sum = appData.bookSummaries[b.name];
+                const sumText = sum && sum.text ? sum.text : '';
+                const hasSum = !!sumText;
+
+                // 读后感列表
+                let reviewsHtml = '';
+                if (b.reviews.length) {
+                    reviewsHtml = b.reviews.map(r => {
+                        const p = PERSONS.find(x => x.id === r.person);
+                        const av = p ? p.avatar + ' ' + p.name : '未知';
+                        return `
+                            <div class="bc-review-item">
+                                <div class="bcr-meta">
+                                    <span>${av}</span>
+                                    <span>${r.date}</span>
+                                    ${r.chapter ? `<span>${escapeHtml(r.chapter)}</span>` : ''}
+                                </div>
+                                <div>${escapeHtml(r.text)}</div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    reviewsHtml = '<div class="empty-text" style="padding:8px 0;">暂无读后感</div>';
+                }
+
+                html += `
+                    <div class="book-card">
+                        <div class="bc-header">
+                            <div class="bc-title">
+                                <span class="bc-emoji">📕</span>
+                                <span class="bc-name">${escapeHtml(b.name)}</span>
+                            </div>
+                            <div class="bc-stats">
+                                <div>${b.count} 次</div>
+                                <div>${b.duration} 分钟</div>
+                                <div>${b.reviews.length} 篇读后感</div>
+                            </div>
+                        </div>
+                        <div class="bc-actions">
+                            <button class="bc-btn primary" onclick="generateBookSummary('${escapeHtml(b.name).replace(/'/g,"\\'")}')">
+                                🪄 AI 汇总读后感
+                            </button>
+                            <button class="bc-btn secondary" onclick="toggleBookReviews('${escapeHtml(b.name).replace(/'/g,"\\'")}')">
+                                📖 查看全部
+                            </button>
+                        </div>
+                        <div class="bc-summary ${hasSum ? 'show' : ''}" id="summary_${encodeURIComponent(b.name)}">
+                            ${hasSum ? `
+                                <div class="bcs-title">
+                                    <span>✨ 整本书读后感</span>
+                                    <span style="font-size:11px;color:#a0aec0;font-weight:400;">${sum.updated || ''}</span>
+                                </div>
+                                <div>${escapeHtml(sumText)}</div>
+                            ` : ''}
+                        </div>
+                        <div class="bc-reviews-list" id="reviews_${encodeURIComponent(b.name)}">
+                            ${reviewsHtml}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function toggleBookReviews(bookName) {
+            const el = document.getElementById('reviews_' + encodeURIComponent(bookName));
+            if (el) el.classList.toggle('show');
+        }
+
+        /** 生成整本书读后感汇总 */
+        function generateBookSummary(bookName) {
+            const books = getAllBooks();
+            const b = books.find(x => x.name === bookName);
+            if (!b) return showToast('未找到书籍', 'error');
+            if (!b.reviews.length) return showToast('该书还没有读后感，先添加读后感吧', 'warning');
+
+            showToast('🪄 AI 正在汇总…', 'info');
+
+            setTimeout(() => {
+                const text = buildBookSummary(b);
+                appData.bookSummaries[bookName] = {
+                    text: text,
+                    updated: new Date().toLocaleDateString('zh-CN')
+                };
+                saveData(appData);
+                renderBookSummaries();
+                // 自动展开显示
+                const el = document.getElementById('summary_' + encodeURIComponent(bookName));
+                if (el) el.classList.add('show');
+                showToast('✨ 整本书读后感生成成功', 'success');
+            }, 600);
+        }
+
+        /** 智能汇总引擎：把多篇读后感合并成一篇 */
+        function buildBookSummary(book) {
+            const name = book.name;
+            const totalReviews = book.reviews.length;
+
+            // 收集关键词/情感词
+            const allText = book.reviews.map(r => r.text).join(' ');
+            const words = allText
+                .split(/[\s,，。、！!?？;；:：\n]+/)
+                .map(w => w.trim())
+                .filter(w => w.length >= 2 && w.length <= 20);
+            const unique = [...new Set(words)];
+
+            const feelings = [];
+            const lessons = [];
+            const plots = [];
+            const characters = [];
+            const others = [];
+
+            for (const w of unique) {
+                if (/[高兴开心快乐感动难过伤心生气害怕敬佩佩服惊讶紧张激动兴奋满意]/.test(w)) feelings.push(w);
+                else if (/[明白懂得学到知道领悟启发道理启示成长进步收获体会]/.test(w)) lessons.push(w);
+                else if (/[故事发生打做走看听读写想说要]/.test(w)) plots.push(w);
+                else if (/[爸妈妈老师同学朋友伙伴他她它人物主角孙悟空唐僧猪八戒]/.test(w) && w.length <= 6) characters.push(w);
+                else others.push(w);
+            }
+
+            const speakers = [...new Set(book.reviews.map(r => {
+                const p = PERSONS.find(x => x.id === r.person);
+                return p ? p.name : '家人';
+            }))];
+
+            // 段落1：总体介绍
+            const p1 = `我们一起读完了《${name}》，一共读了 ${book.count} 次，累计 ${book.duration} 分钟。${speakers.join('、')}都认真地写下了自己的感受，一共 ${totalReviews} 篇读后感。`;
+
+            // 段落2：故事内容
+            let p2 = '';
+            if (characters.length || plots.length) {
+                const parts = [];
+                if (characters.length) parts.push(`书中的${characters.slice(0,3).join('、')}给我留下了深刻印象`);
+                if (plots.length) parts.push(`特别是${plots.slice(0,3).join('、')}这些情节让我们读得津津有味`);
+                p2 = parts.join('，') + '。';
+            } else {
+                p2 = `这本书里的故事精彩动人，读起来让人爱不释手。`;
+            }
+
+            // 段落3：感受
+            let p3 = '';
+            if (feelings.length) {
+                p3 = `读完之后，我们心中充满了${feelings.slice(0,3).join('、')}。`;
+            } else {
+                p3 = `读完这本书，我们全家都收获满满。`;
+            }
+
+            // 段落4：道理
+            let p4 = '';
+            if (lessons.length) {
+                p4 = `通过阅读，我们${lessons.slice(0,3).join('、')}了很多道理。`;
+            } else {
+                p4 = `通过阅读这本书，我们明白了很多做人的道理。`;
+            }
+
+            // 段落5：结尾
+            const p5 = `这本书像一把钥匙，为我们打开了一扇新的知识大门。以后我们全家还会继续一起阅读更多的好书，让阅读成为我们家最温暖的习惯！`;
+
+            return `${p1}\n\n${p2}\n\n${p3}\n\n${p4}\n\n${p5}`;
+        }
+
+        function renderRankList() {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), now.getMonth(), 1);
+            const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            document.getElementById('monthLabel').textContent =
+                now.getFullYear() + '年' + (now.getMonth()+1) + '月';
+
+            const stats = PERSONS.map(p => ({
+                ...p,
+                score: Math.round(getPersonScoreInRange(p.id, start, end) * 10) / 10,
+                days: getPersonDaysInRange(p.id, start, end)
+            })).sort((a, b) => b.score - a.score);
+
+            const c = document.getElementById('rankList');
+            if (!stats.some(s => s.score > 0 || s.days > 0)) {
+                c.innerHTML = '<div class="empty-text">本月暂无打卡</div>';
+                return;
+            }
+            let html = '';
+            stats.forEach((s, i) => {
+                const m = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+                html += `
+                    <div class="rank-item">
+                        <div class="r-medal">${m}</div>
+                        <div class="r-avatar">${s.avatar}</div>
+                        <div class="r-name">${s.name}</div>
+                        <div class="r-stat">${s.days}天</div>
+                        <div class="r-score">${s.score}分</div>
+                    </div>
+                `;
+            });
+            c.innerHTML = html;
+        }
+
+        function renderWeekSummary() {
+            const weekDates = getWeekDates(new Date());
+            const monday = weekDates[0], sunday = weekDates[6];
+            document.getElementById('weekSummaryRange').textContent =
+                (monday.getMonth()+1) + '/' + monday.getDate() + ' - ' + (sunday.getMonth()+1) + '/' + sunday.getDate();
+
+            const wr = appData.checkins.filter(c => {
+                const d = parseDate(c.date);
+                return d >= monday && d <= sunday;
+            });
+            const c = document.getElementById('weekSummary');
+            if (!wr.length) { c.innerHTML = '<div class="empty-text">本周暂无打卡</div>'; return; }
+
+            let html = '<div class="summary-grid">';
+            for (const p of PERSONS) {
+                const recs = wr.filter(x => x.person === p.id);
+                const days = new Set(recs.map(x => x.date)).size;
+                const dur = recs.reduce((s, x) => s + x.duration, 0);
+                const sc = recs.reduce((s, x) => s + (x.score || 0), 0);
+                html += `
+                    <div class="summary-item">
+                        <div class="si-avatar">${p.avatar}</div>
+                        <div class="si-name">${p.name}</div>
+                        <div class="si-detail">${days}天 · ${dur}分</div>
+                        <div class="si-score">+${Math.round(sc * 10) / 10}分</div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+
+            const dw = new Set(wr.map(x => x.date));
+            if (dw.size >= WEEK_REWARD_DAYS) {
+                html += `<div class="reward-box"><span class="reward-label">🏆 本周家庭打卡 ${dw.size} 天</span><span class="reward-value">+${WEEK_REWARD_POINTS}分</span></div>`;
+            } else {
+                html += `<div class="reward-box" style="border-color:#e2e8f0;background:#f7fafc;opacity:0.8;"><span class="reward-label">🏆 周奖励（已 ${dw.size} 天）</span><span style="font-size:12px;color:#a0aec0;">再${WEEK_REWARD_DAYS - dw.size}天得+${WEEK_REWARD_POINTS}分</span></div>`;
+            }
+            c.innerHTML = html;
+        }
+
+        // =============================================================
+        //  打卡人 & 计时器
+        // =============================================================
+        let selectedPerson = null;
+        let timerRunning = false;
+        let timerPaused = false;
+        let seconds = 0;
+        let timerInterval = null;
+        let startTimestamp = null;
+        let pausedSeconds = 0;
+
+        // 已录制的打卡证据
+        let currentAudioData = null;   // base64
+        let currentVideoData = null;   // base64
+        let currentAudioDuration = 0;  // 秒
+        let currentVideoDuration = 0;  // 秒
+
+        function selectPerson(id) {
+            if (timerRunning && !timerPaused) {
+                showToast('请先暂停或结束当前打卡', 'warning');
+                return;
+            }
+            const p = PERSONS.find(x => x.id === id);
+            if (!p) return;
+            selectedPerson = id;
+            window._selectedPerson = id;
+            renderPersons();
+            document.getElementById('timerSubjectLabel').innerHTML = `${p.avatar} ${p.name}`;
+            document.getElementById('timerStatus').textContent = '准备开始';
+            document.getElementById('btnSubmit').disabled = true;
+            if (!timerRunning || timerPaused) { seconds = 0; updateDisplay(); }
+            showToast(`已选择 ${p.name}`, 'info');
+        }
+
+        function updateDisplay() {
+            const h = String(Math.floor(seconds / 3600)).padStart(2,'0');
+            const m = String(Math.floor((seconds % 3600) / 60)).padStart(2,'0');
+            const s = String(seconds % 60).padStart(2,'0');
+            document.getElementById('timerDisplay').innerHTML =
+                `${h}<span class="unit">:</span>${m}<span class="unit">:</span>${s}`;
+            const mins = Math.floor(seconds / 60);
+            const score = calcScore(mins);
+            if (selectedPerson) {
+                document.getElementById('timerStatus').innerHTML =
+                    `已 <strong style="color:#07c160;">${mins}</strong> 分钟 · 可得 <strong style="color:#d68910;">${score}</strong> 分`;
+            }
+        }
+
+        function startTimer() {
+            if (!selectedPerson) return showToast('请先选择打卡人', 'warning');
+            if (timerRunning && !timerPaused) return;
+            if (timerPaused) {
+                timerRunning = true; timerPaused = false;
+                startTimestamp = Date.now() - pausedSeconds * 1000;
+                timerInterval = setInterval(tick, 1000);
+                document.getElementById('btnStart').disabled = true;
+                document.getElementById('btnPause').disabled = false;
+                document.getElementById('btnPause').textContent = '⏸ 暂停';
+                document.getElementById('btnStop').disabled = false;
+                document.getElementById('timerStatus').textContent = '继续打卡中...';
+                return;
+            }
+            seconds = 0;
+            timerRunning = true; timerPaused = false;
+            startTimestamp = Date.now();
+            timerInterval = setInterval(tick, 1000);
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('btnPause').disabled = false;
+            document.getElementById('btnPause').textContent = '⏸ 暂停';
+            document.getElementById('btnStop').disabled = false;
+            document.getElementById('timerStatus').textContent = '打卡进行中...';
+            updateDisplay();
+            showToast('⏰ 开始打卡！', 'success');
+        }
+        function tick() {
+            if (!timerRunning || timerPaused) return;
+            seconds = Math.floor((Date.now() - startTimestamp) / 1000);
+            updateDisplay();
+        }
+        function pauseTimer() {
+            if (!timerRunning || timerPaused) return;
+            timerPaused = true; pausedSeconds = seconds;
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+            document.getElementById('btnPause').textContent = '▶ 继续';
+            document.getElementById('btnStart').disabled = false;
+            document.getElementById('btnStart').textContent = '▶ 继续';
+            document.getElementById('timerStatus').textContent = '已暂停';
+        }
+        function stopTimer() {
+            if (!timerRunning) return;
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+            timerRunning = false; timerPaused = false;
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('btnPause').disabled = true;
+            document.getElementById('btnStop').disabled = true;
+
+            const mins = Math.floor(seconds / 60);
+            if (mins <= 0) {
+                document.getElementById('timerStatus').textContent = '打卡不足1分钟';
+                showToast('打卡不足1分钟', 'warning');
+                setTimeout(() => {
+                    document.getElementById('btnStart').disabled = false;
+                    document.getElementById('btnStart').textContent = '▶ 开始';
+                    timerRunning = false;
+                    seconds = 0;
+                    updateDisplay();
+                }, 1200);
+                return;
+            }
+            const score = calcScore(mins);
+            document.getElementById('timerStatus').innerHTML =
+                `✅ 完成！${mins} 分钟 · <strong style="color:#d68910;">${score}</strong> 分`;
+            document.getElementById('btnSubmit').disabled = false;
+            showToast(`✅ 可提交（+${score}分）`, 'success');
+        }
+
+        /** 检查是否可以提交打卡 */
+        function updateSubmitState() {
+            const mins = Math.floor(seconds / 60);
+            const canSubmit = mins >= 1 || currentAudioData || currentVideoData;
+            document.getElementById('btnSubmit').disabled = !canSubmit;
+        }
+
+        function renderAttachList() {
+            const wrap = document.getElementById('attachListWrap');
+            const list = document.getElementById('attachList');
+            const items = [];
+
+            if (currentAudioData) {
+                items.push(`
+                    <div class="attach-item">
+                        <span class="a-icon">🎤</span>
+                        <div class="a-info">
+                            <div class="a-name">音频打卡</div>
+                            <div class="a-meta">时长 ${formatTime(currentAudioDuration)}</div>
+                            <audio src="${currentAudioData}" controls style="width:100%;margin-top:4px;"></audio>
+                        </div>
+                        <span class="a-del" onclick="removeAudioEvidence()">✕</span>
+                    </div>
+                `);
+            }
+            if (currentVideoData) {
+                items.push(`
+                    <div class="attach-item">
+                        <span class="a-icon">🎬</span>
+                        <div class="a-info">
+                            <div class="a-name">视频打卡</div>
+                            <div class="a-meta">时长 ${formatTime(currentVideoDuration)}</div>
+                            <video src="${currentVideoData}" controls playsinline style="width:100%;margin-top:4px;"></video>
+                        </div>
+                        <span class="a-del" onclick="removeVideoEvidence()">✕</span>
+                    </div>
+                `);
+            }
+
+            if (!items.length) {
+                wrap.style.display = 'none';
+                return;
+            }
+            wrap.style.display = 'block';
+            list.innerHTML = items.join('');
+        }
+
+        function removeAudioEvidence() {
+            currentAudioData = null;
+            currentAudioDuration = 0;
+            renderAttachList();
+            updateSubmitState();
+        }
+        function removeVideoEvidence() {
+            currentVideoData = null;
+            currentVideoDuration = 0;
+            renderAttachList();
+            updateSubmitState();
+        }
+
+        // =============================================================
+        //  🎤 音频打卡
+        // =============================================================
+        let audioRecorder = null;
+        let audioChunks = [];
+        let audioTimerInterval = null;
+        let audioStartTime = 0;
+        let audioBlob = null;
+
+        async function openAudioCheckin() {
+            if (!selectedPerson) return showToast('请先选择打卡人', 'warning');
+            audioChunks = [];
+            audioBlob = null;
+            document.getElementById('audioPlaybackWrap').style.display = 'none';
+            document.getElementById('audioHint').textContent = '点击麦克风开始录音';
+            document.getElementById('audioTimer').style.display = 'none';
+            document.getElementById('audioWave').style.display = 'flex';
+            document.getElementById('audioRecBtn').className = 'rec-btn-lg start';
+            document.getElementById('audioRecBtn').textContent = '🎤';
+            document.getElementById('audioModal').classList.add('show');
+
+            // 立即开始录音
+            setTimeout(() => toggleAudioRecording(), 300);
+        }
+
+        async function toggleAudioRecording() {
+            const btn = document.getElementById('audioRecBtn');
+            if (audioRecorder && audioRecorder.state === 'recording') {
+                audioRecorder.stop();
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioChunks = [];
+                audioRecorder = new MediaRecorder(stream);
+                audioRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                audioRecorder.onstop = async () => {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    audioBlob = blob;
+                    currentAudioData = await blobToBase64(blob);
+                    currentAudioDuration = Math.floor((Date.now() - audioStartTime) / 1000);
+                    stream.getTracks().forEach(t => t.stop());
+
+                    const playback = document.getElementById('audioPlayback');
+                    playback.src = currentAudioData;
+                    document.getElementById('audioPlaybackWrap').style.display = 'block';
+                    document.getElementById('audioHint').textContent = '✅ 录音完成，点击「保存音频」';
+                    document.getElementById('audioRecBtn').className = 'rec-btn-lg start';
+                    document.getElementById('audioRecBtn').textContent = '🎤';
+                    document.getElementById('audioTimer').style.display = 'none';
+                    clearInterval(audioTimerInterval);
+                };
+                audioRecorder.start();
+                audioStartTime = Date.now();
+                btn.className = 'rec-btn-lg stop';
+                btn.textContent = '⏹';
+                document.getElementById('audioHint').textContent = '录音中…再次点击停止';
+                document.getElementById('audioTimer').style.display = 'flex';
+                document.getElementById('audioTimerText').textContent = '00:00';
+                audioTimerInterval = setInterval(() => {
+                    const s = Math.floor((Date.now() - audioStartTime) / 1000);
+                    document.getElementById('audioTimerText').textContent = formatTime(s);
+                }, 200);
+            } catch (err) {
+                showToast('无法访问麦克风：' + err.message, 'error');
+            }
+        }
+
+        function closeAudioModal() {
+            if (audioRecorder && audioRecorder.state === 'recording') {
+                try { audioRecorder.stop(); } catch (_) {}
+            }
+            clearInterval(audioTimerInterval);
+            document.getElementById('audioModal').classList.remove('show');
+        }
+
+        function saveAudioCheckin() {
+            if (!currentAudioData) return showToast('请先录音', 'warning');
+            closeAudioModal();
+            renderAttachList();
+            updateSubmitState();
+            showToast('✅ 音频已保存', 'success');
+        }
+
+        // =============================================================
+        //  🎬 视频打卡
+        // =============================================================
+        let videoRecorder = null;
+        let videoChunks = [];
+        let videoTimerInterval = null;
+        let videoStartTime = 0;
+        let videoStream = null;
+        let currentFacing = 'environment';
+
+        async function openVideoCheckin() {
+            if (!selectedPerson) return showToast('请先选择打卡人', 'warning');
+            videoChunks = [];
+            document.getElementById('videoPlaybackWrap').style.display = 'none';
+            document.getElementById('videoHint').textContent = '点击开始录像，再次点击停止';
+            document.getElementById('videoTimer').style.display = 'none';
+            document.getElementById('videoRecBtn').className = 'rec-btn-lg start';
+            document.getElementById('videoRecBtn').textContent = '🎬';
+            document.getElementById('videoModal').classList.add('show');
+
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: currentFacing },
+                    audio: true
+                });
+                document.getElementById('videoEl').srcObject = videoStream;
+            } catch (err) {
+                showToast('无法访问摄像头：' + err.message, 'error');
+                closeVideoModal();
+            }
+        }
+
+        async function switchCamera() {
+            if (videoRecorder && videoRecorder.state === 'recording') {
+                return showToast('录像中不能切换摄像头', 'warning');
+            }
+            currentFacing = currentFacing === 'environment' ? 'user' : 'environment';
+            if (videoStream) {
+                videoStream.getTracks().forEach(t => t.stop());
+            }
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: currentFacing },
+                    audio: true
+                });
+                document.getElementById('videoEl').srcObject = videoStream;
+                showToast('已切换到' + (currentFacing === 'user' ? '前置' : '后置') + '摄像头', 'info');
+            } catch (err) {
+                showToast('切换失败：' + err.message, 'error');
+            }
+        }
+
+        function toggleVideoRecording() {
+            const btn = document.getElementById('videoRecBtn');
+            if (videoRecorder && videoRecorder.state === 'recording') {
+                videoRecorder.stop();
+                return;
+            }
+            if (!videoStream) return showToast('摄像头未准备好', 'warning');
+
+            try {
+                videoChunks = [];
+                videoRecorder = new MediaRecorder(videoStream);
+                videoRecorder.ondataavailable = e => { if (e.data.size > 0) videoChunks.push(e.data); };
+                videoRecorder.onstop = async () => {
+                    const blob = new Blob(videoChunks, { type: 'video/webm' });
+                    currentVideoData = await blobToBase64(blob);
+                    currentVideoDuration = Math.floor((Date.now() - videoStartTime) / 1000);
+                    const pb = document.getElementById('videoPlayback');
+                    pb.src = currentVideoData;
+                    document.getElementById('videoPlaybackWrap').style.display = 'block';
+                    document.getElementById('videoHint').textContent = '✅ 录像完成，点击「保存视频」';
+                    document.getElementById('videoRecBtn').className = 'rec-btn-lg start';
+                    document.getElementById('videoRecBtn').textContent = '🎬';
+                    document.getElementById('videoTimer').style.display = 'none';
+                    clearInterval(videoTimerInterval);
+                };
+                videoRecorder.start();
+                videoStartTime = Date.now();
+                btn.className = 'rec-btn-lg stop';
+                btn.textContent = '⏹';
+                document.getElementById('videoHint').textContent = '录像中…再次点击停止';
+                document.getElementById('videoTimer').style.display = 'flex';
+                document.getElementById('videoTimerText').textContent = '00:00';
+                videoTimerInterval = setInterval(() => {
+                    const s = Math.floor((Date.now() - videoStartTime) / 1000);
+                    document.getElementById('videoTimerText').textContent = formatTime(s);
+                }, 200);
+            } catch (err) {
+                showToast('录像失败：' + err.message, 'error');
+            }
+        }
+
+        function closeVideoModal() {
+            if (videoRecorder && videoRecorder.state === 'recording') {
+                try { videoRecorder.stop(); } catch (_) {}
+            }
+            if (videoStream) {
+                videoStream.getTracks().forEach(t => t.stop());
+                videoStream = null;
+            }
+            clearInterval(videoTimerInterval);
+            document.getElementById('videoModal').classList.remove('show');
+        }
+
+        function saveVideoCheckin() {
+            if (!currentVideoData) return showToast('请先录像', 'warning');
+            closeVideoModal();
+            renderAttachList();
+            updateSubmitState();
+            showToast('✅ 视频已保存', 'success');
+        }
+
+        // =============================================================
+        //  提交打卡
+        // =============================================================
+        function submitCheckin() {
+            if (!selectedPerson) return showToast('请选择打卡人', 'warning');
+            const mins = Math.floor(seconds / 60);
+            if (mins < 1 && !currentAudioData && !currentVideoData) {
+                return showToast('请至少打卡1分钟或录制音频/视频', 'warning');
+            }
+
+            const score = calcScore(mins);
+            const today = getTodayStr();
+
+            const record = {
+                id: 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+                date: today,
+                person: selectedPerson,
+                duration: mins,
+                score: score,
+                book: document.getElementById('bookName').value.trim(),
+                chapter: document.getElementById('bookChapter').value.trim(),
+                unit: document.getElementById('bookUnit').value.trim(),
+                section: document.getElementById('bookSection').value.trim(),
+                audioData: currentAudioData,
+                audioDuration: currentAudioDuration,
+                videoData: currentVideoData,
+                videoDuration: currentVideoDuration,
+                review: '',
+                reviewAudio: null
+            };
+
+            appData.checkins.push(record);
+            saveData(appData);
+
+            // 清空
+            document.getElementById('bookName').value = '';
+            document.getElementById('bookChapter').value = '';
+            document.getElementById('bookUnit').value = '';
+            document.getElementById('bookSection').value = '';
+            currentAudioData = null;
+            currentVideoData = null;
+            currentAudioDuration = 0;
+            currentVideoDuration = 0;
+            renderAttachList();
+
+            seconds = 0;
+            updateDisplay();
+            document.getElementById('btnSubmit').disabled = true;
+            document.getElementById('btnStart').disabled = false;
+            document.getElementById('btnStart').textContent = '▶ 开始';
+            document.getElementById('btnPause').disabled = true;
+            document.getElementById('btnStop').disabled = true;
+            timerRunning = false; timerPaused = false;
+            document.getElementById('timerStatus').textContent = '✅ 已提交！';
+
+            renderAll();
+            const p = PERSONS.find(x => x.id === selectedPerson);
+            showToast(`🎉 ${p.name} 打卡成功！+${score}分`, 'success');
+
+            // 自动打开读后感
+            setTimeout(() => openReviewModal(record.id), 600);
+        }
+
+        // =============================================================
+        //  ✨ 读后感（录音 + AI 编辑）
+        // =============================================================
+        let currentReviewId = null;
+        let reviewRecorder = null;
+        let reviewChunks = [];
+        let reviewTimerInterval = null;
+        let reviewStartTime = 0;
+        let speechRecognition = null;
+        let finalTranscript = '';
+
+        function openReviewModal(recordId) {
+            const rec = appData.checkins.find(c => c.id === recordId);
+            if (!rec) return;
+            currentReviewId = recordId;
+
+            const p = PERSONS.find(x => x.id === rec.person);
+            const metaParts = [];
+            if (p) metaParts.push(`${p.avatar} ${p.name}`);
+            metaParts.push(`⏱ ${rec.duration}分钟`);
+            if (rec.book) metaParts.push(`📕《${rec.book}》`);
+            if (rec.chapter) metaParts.push(rec.chapter);
+            if (rec.unit) metaParts.push(rec.unit);
+            if (rec.section) metaParts.push(rec.section);
+            document.getElementById('reviewMetaInfo').innerHTML = metaParts.join(' · ');
+
+            // 重置
+            document.getElementById('reviewText').value = rec.review || '';
+            document.getElementById('reviewAsrText').textContent = '识别结果会显示在这里…';
+            document.getElementById('reviewAsrText').classList.add('empty');
+            document.getElementById('reviewAsrStatus').textContent = '';
+            document.getElementById('reviewRecHint').textContent = '点击麦克风开始录音';
+            document.getElementById('reviewPreviewPlaceholder').style.display = 'block';
+            document.getElementById('reviewWave').style.display = 'none';
+            document.getElementById('reviewTimer').style.display = 'none';
+            document.getElementById('reviewRecBtn').className = 'rec-btn-lg start';
+            document.getElementById('reviewRecBtn').textContent = '🎤';
+            finalTranscript = '';
+
+            document.getElementById('reviewModal').classList.add('show');
+        }
+
+        function closeReviewModal() {
+            if (reviewRecorder && reviewRecorder.state === 'recording') {
+                try { reviewRecorder.stop(); } catch (_) {}
+            }
+            if (speechRecognition) {
+                try { speechRecognition.stop(); } catch (_) {}
+            }
+            clearInterval(reviewTimerInterval);
+            document.getElementById('reviewModal').classList.remove('show');
+            currentReviewId = null;
+        }
+
+        async function toggleReviewRecording() {
+            const btn = document.getElementById('reviewRecBtn');
+            if (reviewRecorder && reviewRecorder.state === 'recording') {
+                reviewRecorder.stop();
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                reviewChunks = [];
+                reviewRecorder = new MediaRecorder(stream);
+                reviewRecorder.ondataavailable = e => { if (e.data.size > 0) reviewChunks.push(e.data); };
+                reviewRecorder.onstop = async () => {
+                    const blob = new Blob(reviewChunks, { type: 'audio/webm' });
+                    const b64 = await blobToBase64(blob);
+                    const rec = appData.checkins.find(c => c.id === currentReviewId);
+                    if (rec) { rec.reviewAudio = b64; saveData(appData); }
+                    stream.getTracks().forEach(t => t.stop());
+
+                    document.getElementById('reviewRecBtn').className = 'rec-btn-lg start';
+                    document.getElementById('reviewRecBtn').textContent = '🎤';
+                    document.getElementById('reviewRecHint').textContent = '✅ 录音完成，可点击 AI 编辑';
+                    document.getElementById('reviewTimer').style.display = 'none';
+                    document.getElementById('reviewWave').style.display = 'none';
+                    document.getElementById('reviewPreviewPlaceholder').style.display = 'block';
+                    document.getElementById('reviewPreviewPlaceholder').textContent = '🎤 录音已保存';
+                    clearInterval(reviewTimerInterval);
+                };
+                reviewRecorder.start();
+                reviewStartTime = Date.now();
+                btn.className = 'rec-btn-lg stop';
+                btn.textContent = '⏹';
+                document.getElementById('reviewRecHint').textContent = '录音中…再次点击停止';
+                document.getElementById('reviewTimer').style.display = 'flex';
+                document.getElementById('reviewTimerText').textContent = '00:00';
+                document.getElementById('reviewWave').style.display = 'flex';
+                document.getElementById('reviewPreviewPlaceholder').style.display = 'none';
+                reviewTimerInterval = setInterval(() => {
+                    const s = Math.floor((Date.now() - reviewStartTime) / 1000);
+                    document.getElementById('reviewTimerText').textContent = formatTime(s);
+                }, 200);
+
+                // 同时启动语音识别
+                startSpeechRecognition();
+            } catch (err) {
+                showToast('无法访问麦克风：' + err.message, 'error');
+            }
+        }
+
+        function startSpeechRecognition() {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) {
+                document.getElementById('reviewAsrStatus').textContent = '⚠️ 当前环境不支持语音识别，可手动输入';
+                return;
+            }
+            try {
+                if (speechRecognition) { try { speechRecognition.stop(); } catch(_){} }
+                speechRecognition = new SR();
+                speechRecognition.lang = 'zh-CN';
+                speechRecognition.continuous = true;
+                speechRecognition.interimResults = true;
+                finalTranscript = '';
+
+                speechRecognition.onstart = () => {
+                    document.getElementById('reviewAsrStatus').textContent = '🎙️ 识别中…';
+                };
+                speechRecognition.onresult = (e) => {
+                    let interim = '';
+                    for (let i = e.resultIndex; i < e.results.length; i++) {
+                        const tr = e.results[i][0].transcript;
+                        if (e.results[i].isFinal) finalTranscript += tr;
+                        else interim += tr;
+                    }
+                    const shown = (finalTranscript + interim).trim();
+                    const el = document.getElementById('reviewAsrText');
+                    if (shown) {
+                        el.textContent = shown;
+                        el.classList.remove('empty');
+                    }
+                };
+                speechRecognition.onerror = (e) => {
+                    document.getElementById('reviewAsrStatus').textContent = '识别出错：' + (e.error || '未知');
+                };
+                speechRecognition.onend = () => {
+                    document.getElementById('reviewAsrStatus').textContent =
+                        finalTranscript ? '✅ 识别完成' : '未识别到内容';
+                };
+                speechRecognition.start();
+            } catch (err) {
+                document.getElementById('reviewAsrStatus').textContent = '⚠️ 语音识别启动失败';
+            }
+        }
+
+        /** AI 智慧编辑：把语音识别结果整理成通顺的读后感 */
+        function generateReview() {
+            if (!currentReviewId) return;
+            const rec = appData.checkins.find(c => c.id === currentReviewId);
+            if (!rec) return;
+
+            const asrText = document.getElementById('reviewAsrText').textContent.trim();
+            const hasAsr = asrText && asrText !== '识别结果会显示在这里…';
+
+            if (!hasAsr) {
+                return showToast('请先录音，或手动输入读后感', 'warning');
+            }
+
+            const btn = document.getElementById('btnGenerate');
+            btn.disabled = true;
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<span>🪄</span> AI 编辑中<span class="loading-dots"><span></span><span></span><span></span></span>';
+
+            setTimeout(() => {
+                const review = smartEditReview(asrText, rec);
+                document.getElementById('reviewText').value = review;
+                btn.disabled = false;
+                btn.innerHTML = orig;
+                showToast('✨ AI 编辑完成', 'success');
+            }, 700);
+        }
+
+        /** 智能整理口语化文字为书面读后感 */
+        function smartEditReview(rawText, rec) {
+            const person = PERSONS.find(x => x.id === rec.person);
+            const pName = person ? person.name : '我';
+            const book = rec.book || '这本书';
+            const chapter = rec.chapter ? ('的' + rec.chapter) : '';
+
+            // 清理：去掉语气词、重复
+            let text = rawText
+                .replace(/嗯+|啊+|呃+|那个|这个|就是说|然后呢|反正/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            // 拆分句子
+            const sentences = text
+                .split(/[。！!?？\n]+/)
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+
+            // 提取关键词
+            const allWords = text.split(/[\s,，。、！!?？;；:：]+/).filter(w => w.length >= 2);
+            const uniqueWords = [...new Set(allWords)];
+
+            const feelings = uniqueWords.filter(w => /[高兴开心快乐感动难过伤心生气害怕敬佩佩服惊讶紧张激动兴奋]/.test(w));
+            const lessons = uniqueWords.filter(w => /[明白懂得学到知道领悟启发道理启示成长进步收获]/.test(w));
+            const plots = uniqueWords.filter(w => /[故事发生打做走看听读写想说]/.test(w));
+            const chars = uniqueWords.filter(w => /[孙悟空唐僧猪八戒师傅妖怪国王]/.test(w) || (w.length <= 5 && /[他她它]/.test(w)));
+
+            // 组合
+            const p1 = `今天${pName}读了《${book}》${chapter}，${sentences[0] ? sentences[0] : '读得津津有味'}。`;
+
+            let p2 = '';
+            if (sentences.length > 1) {
+                const midSentences = sentences.slice(1, 4).join('。');
+                p2 = midSentences + '。';
+            } else if (plots.length) {
+                p2 = `其中印象最深刻的是${plots.slice(0,3).join('、')}这部分内容。`;
+            } else {
+                p2 = `故事内容十分精彩，读起来让人欲罢不能。`;
+            }
+
+            let p3 = '';
+            if (feelings.length) {
+                p3 = `读完以后，我感到特别${feelings.slice(0,2).join('、')}。`;
+            } else {
+                p3 = `读完以后，我的心里久久不能平静。`;
+            }
+
+            let p4 = '';
+            if (lessons.length) {
+                p4 = `通过这次阅读，我${lessons.slice(0,2).join('、')}了很多道理。`;
+            } else {
+                p4 = `通过这次阅读，我收获了很多，也成长了很多。`;
+            }
+
+            const p5 = `我会把这份阅读的快乐一直延续下去，以后读更多的好书！`;
+
+            return `${p1}\n\n${p2}\n\n${p3}\n\n${p4}\n\n${p5}`;
+        }
+
+        function saveReview() {
+            if (!currentReviewId) return;
+            const rec = appData.checkins.find(c => c.id === currentReviewId);
+            if (!rec) return;
+
+            rec.review = document.getElementById('reviewText').value.trim();
+            saveData(appData);
+            closeReviewModal();
+            renderAll();
+            showToast('💾 读后感已保存', 'success');
+        }
+
+        // =============================================================
+        //  渲染全部 / 清除 / 重置
+        // =============================================================
+        function renderAll() {
+            renderWeekOverview();
+            renderPersons();
+            renderTodayRecords();
+            renderBookSummaries();
+            renderRankList();
+            renderWeekSummary();
+            document.getElementById('totalScore').textContent = calcTotalScore();
+        }
+
+        function clearAllCheckins() {
+            if (!confirm('确定清除所有打卡记录吗？（包括读后感）')) return;
+            appData.checkins = [];
+            appData.bookSummaries = {};
+            saveData(appData);
+            renderAll();
+            showToast('已清除所有打卡', 'info');
+        }
+
+        function resetAll() {
+            if (!confirm('重置所有数据？')) return;
+            appData = getDefaultData();
+            saveData(appData);
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+            timerRunning = false; timerPaused = false;
+            seconds = 0;
+            selectedPerson = null;
+            window._selectedPerson = null;
+            currentAudioData = null;
+            currentVideoData = null;
+            currentAudioDuration = 0;
+            currentVideoDuration = 0;
+            updateDisplay();
+            document.getElementById('btnStart').disabled = false;
+            document.getElementById('btnStart').textContent = '▶ 开始';
+            document.getElementById('btnPause').disabled = true;
+            document.getElementById('btnStop').disabled = true;
+            document.getElementById('btnSubmit').disabled = true;
+            document.getElementById('timerSubjectLabel').textContent = '👆 请先选择打卡人';
+            document.getElementById('timerStatus').textContent = '选择打卡人后开始';
+            renderAttachList();
+            renderAll();
+            showToast('已重置', 'info');
+        }
+
+        // =============================================================
+        //  初始化
+        // =============================================================
+        renderAll();
+        window.addEventListener('beforeunload', () => saveData(appData));
+    </script>
+</body>
+</html>
